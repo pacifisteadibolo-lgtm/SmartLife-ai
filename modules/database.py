@@ -1,0 +1,226 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+
+db = SQLAlchemy()
+
+# ─────────────────────────────────────────────
+#  1. UTILISATEURS
+# ─────────────────────────────────────────────
+class Utilisateur(db.Model):
+    __tablename__ = 'utilisateurs'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    nom        = db.Column(db.String(100), nullable=False)
+    email      = db.Column(db.String(150), unique=True, nullable=False)
+    mot_de_passe = db.Column(db.String(255), nullable=False)
+    photo      = db.Column(db.String(255), default='default.png')
+    bio        = db.Column(db.Text)
+    filiere    = db.Column(db.String(100))
+    niveau     = db.Column(db.String(50))   # Licence 1, Master 2…
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    depenses       = db.relationship('Depense',       backref='utilisateur', lazy='dynamic')
+    revenus        = db.relationship('Revenu',        backref='utilisateur', lazy='dynamic')
+    taches         = db.relationship('Tache',         backref='utilisateur', lazy='dynamic')
+    publications   = db.relationship('Publication',   backref='auteur',      lazy='dynamic')
+    commentaires   = db.relationship('Commentaire',   backref='auteur',      lazy='dynamic')
+    notifications  = db.relationship('Notification',  backref='utilisateur', lazy='dynamic')
+
+    def set_password(self, password):
+        self.mot_de_passe = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.mot_de_passe, password)
+
+    def __repr__(self):
+        return f'<Utilisateur {self.email}>'
+
+
+# ─────────────────────────────────────────────
+#  2. DÉPENSES
+# ─────────────────────────────────────────────
+CATEGORIES_DEPENSES = [
+    'Alimentation', 'Transport', 'Logement', 'Santé',
+    'Loisirs', 'Fournitures', 'Abonnements', 'Autre'
+]
+
+class Depense(db.Model):
+    __tablename__ = 'depenses'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    montant    = db.Column(db.Float, nullable=False)
+    categorie  = db.Column(db.String(100), nullable=False)
+    description= db.Column(db.String(255))
+    date       = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    user_id    = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'montant': self.montant,
+            'categorie': self.categorie, 'description': self.description,
+            'date': self.date.isoformat()
+        }
+
+
+# ─────────────────────────────────────────────
+#  3. REVENUS
+# ─────────────────────────────────────────────
+class Revenu(db.Model):
+    __tablename__ = 'revenus'
+
+    id       = db.Column(db.Integer, primary_key=True)
+    montant  = db.Column(db.Float, nullable=False)
+    source   = db.Column(db.String(100), nullable=False)  # Bourse, Job, Famille…
+    date     = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    user_id  = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'montant': self.montant,
+            'source': self.source, 'date': self.date.isoformat()
+        }
+
+
+# ─────────────────────────────────────────────
+#  4. TÂCHES (Planificateur)
+# ─────────────────────────────────────────────
+class Tache(db.Model):
+    __tablename__ = 'taches'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    titre       = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    priorite    = db.Column(db.String(20), default='moyenne')  # haute / moyenne / basse
+    statut      = db.Column(db.String(20), default='a_faire')  # a_faire / en_cours / termine
+    date_limite = db.Column(db.DateTime)
+    user_id     = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at  = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def score_urgence(self):
+        """Calcule un score d'urgence 0-100 selon priorité + deadline."""
+        if not self.date_limite:
+            return 0
+        delta = (self.date_limite - datetime.utcnow()).days
+        prio_map = {'haute': 40, 'moyenne': 20, 'basse': 5}
+        prio_score = prio_map.get(self.priorite, 10)
+        time_score = max(0, 60 - delta * 2)
+        return min(100, prio_score + time_score)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'titre': self.titre,
+            'priorite': self.priorite, 'statut': self.statut,
+            'date_limite': self.date_limite.isoformat() if self.date_limite else None,
+            'score_urgence': self.score_urgence
+        }
+
+
+# ─────────────────────────────────────────────
+#  5. PUBLICATIONS (Feed UniShare)
+# ─────────────────────────────────────────────
+class Publication(db.Model):
+    __tablename__ = 'publications'
+
+    id       = db.Column(db.Integer, primary_key=True)
+    user_id  = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    contenu  = db.Column(db.Text)
+    type     = db.Column(db.String(20), default='texte')  # texte / fichier / audio
+    likes    = db.Column(db.Integer, default=0)
+    date     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    fichiers     = db.relationship('Fichier',     backref='publication', lazy='dynamic')
+    audios       = db.relationship('Audio',       backref='publication', lazy='dynamic')
+    commentaires = db.relationship('Commentaire', backref='publication', lazy='dynamic', cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'contenu': self.contenu,
+            'type': self.type, 'likes': self.likes,
+            'date': self.date.isoformat(),
+            'auteur': {'id': self.auteur.id, 'nom': self.auteur.nom, 'photo': self.auteur.photo}
+        }
+
+
+# ─────────────────────────────────────────────
+#  6. FICHIERS
+# ─────────────────────────────────────────────
+class Fichier(db.Model):
+    __tablename__ = 'fichiers'
+
+    id        = db.Column(db.Integer, primary_key=True)
+    user_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    pub_id    = db.Column(db.Integer, db.ForeignKey('publications.id'), nullable=True)
+    nom       = db.Column(db.String(255), nullable=False)
+    chemin    = db.Column(db.String(500), nullable=False)
+    type_mime = db.Column(db.String(100))
+    taille    = db.Column(db.Integer)   # en octets
+    matiere   = db.Column(db.String(100))
+    created_at= db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
+#  7. AUDIOS (Messages vocaux)
+# ─────────────────────────────────────────────
+class Audio(db.Model):
+    __tablename__ = 'audios'
+
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    pub_id        = db.Column(db.Integer, db.ForeignKey('publications.id'), nullable=True)
+    chemin        = db.Column(db.String(500), nullable=False)
+    duree         = db.Column(db.Integer)         # secondes
+    transcription = db.Column(db.Text)            # optionnel via IA
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
+#  8. COMMENTAIRES
+# ─────────────────────────────────────────────
+class Commentaire(db.Model):
+    __tablename__ = 'commentaires'
+
+    id      = db.Column(db.Integer, primary_key=True)
+    pub_id  = db.Column(db.Integer, db.ForeignKey('publications.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    contenu = db.Column(db.Text, nullable=False)
+    date    = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
+#  9. NOTIFICATIONS
+# ─────────────────────────────────────────────
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+
+    id      = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    type    = db.Column(db.String(50))    # like / commentaire / message / rappel
+    message = db.Column(db.String(255), nullable=False)
+    lu      = db.Column(db.Boolean, default=False)
+    lien    = db.Column(db.String(255))   # URL cible (optionnel)
+    date    = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
+#  10. MESSAGES PRIVÉS
+# ─────────────────────────────────────────────
+class MessagePrive(db.Model):
+    __tablename__ = 'messages_prives'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    expediteur_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    destinataire_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    contenu         = db.Column(db.Text)
+    type            = db.Column(db.String(20), default='texte')  # texte / audio / fichier
+    lu              = db.Column(db.Boolean, default=False)
+    date            = db.Column(db.DateTime, default=datetime.utcnow)
+
+    expediteur   = db.relationship('Utilisateur', foreign_keys=[expediteur_id])
+    destinataire = db.relationship('Utilisateur', foreign_keys=[destinataire_id])
