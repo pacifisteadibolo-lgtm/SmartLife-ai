@@ -1,16 +1,19 @@
-from flask import Flask
+from flask import Flask, session, redirect, url_for
 from flask_socketio import SocketIO
+from flask_wtf.csrf import CSRFProtect
 from config.settings import Config
 from modules.database import db
 
 socketio = SocketIO()
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
     db.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*")
+    socketio.init_app(app, cors_allowed_origins="*", async_mode='threading')
+    csrf.init_app(app)
 
     # Blueprints
     from modules.auth    import auth_bp
@@ -26,6 +29,12 @@ def create_app():
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     app.register_blueprint(social_bp,    url_prefix='/social')
     app.register_blueprint(ai_bp,        url_prefix='/ai')
+
+    @app.route('/')
+    def index():
+        if 'user_id' in session:
+            return redirect(url_for('dashboard.accueil'))
+        return redirect(url_for('auth.login'))
 
     return app
 
