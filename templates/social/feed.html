@@ -3,17 +3,22 @@
 {% block content %}
   <p class="page-eyebrow">UniShare</p>
   <h1 class="page-title">Le fil du campus</h1>
-  <p class="page-sub">Partage une question, une astuce, un doc — visible par tous les étudiant·e·s.</p>
+  <p class="page-sub">Partage une question, une astuce, une photo, une vidéo ou un doc — visible par tous les étudiant·e·s.</p>
 
   <div class="section-block">
-    <form method="POST" action="{{ url_for('social.publier') }}">
+    <form method="POST" action="{{ url_for('social.publier') }}" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field">
         <label for="contenu">Quoi de neuf ?</label>
         <textarea id="contenu" name="contenu" rows="3" maxlength="2000"
-                  placeholder="Ex : Quelqu'un a les slides du cours de réseaux d'hier ?" required></textarea>
+                  placeholder="Ex : Quelqu'un a les slides du cours de réseaux d'hier ?"></textarea>
       </div>
-      <button type="submit" class="btn-primary btn-compact">Publier</button>
+      <div class="upload-row">
+        <label class="upload-label" for="fichier-pub">📎 Ajouter une photo, vidéo ou un fichier</label>
+        <span class="upload-filename" id="upload-filename"></span>
+      </div>
+      <input type="file" id="fichier-pub" name="fichier" accept="image/*,video/*,.pdf,.docx,.pptx,.xlsx,.txt,.zip">
+      <button type="submit" class="btn-primary btn-compact" style="margin-top:.8rem;">Publier</button>
     </form>
   </div>
 
@@ -24,7 +29,21 @@
           <span class="post-author">{{ pub.auteur.nom }}</span>
           <span class="post-date">{{ pub.date.strftime('%d/%m %H:%M') }}</span>
         </div>
-        <p class="post-body">{{ pub.contenu }}</p>
+        {% if pub.contenu %}<p class="post-body">{{ pub.contenu }}</p>{% endif %}
+
+        {% set media = pub.fichiers.first() %}
+        {% if media %}
+          <div class="post-media">
+            {% if media.categorie == 'photo' %}
+              <img src="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}" alt="">
+            {% elif media.categorie == 'video' %}
+              <video controls src="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}"></video>
+            {% else %}
+              <a class="post-media-fichier" href="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ media.nom }}</a>
+            {% endif %}
+          </div>
+        {% endif %}
+
         <div class="post-actions">
           <form method="POST" action="{{ url_for('social.liker', pub_id=pub.id) }}" class="post-like-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -58,4 +77,14 @@
   {% else %}
     <p class="empty-hint">Aucune publication pour l'instant — sois le premier à écrire quelque chose !</p>
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const inputFichier = document.getElementById('fichier-pub');
+  const nomFichier = document.getElementById('upload-filename');
+  inputFichier.addEventListener('change', () => {
+    nomFichier.textContent = inputFichier.files.length ? inputFichier.files[0].name : '';
+  });
+</script>
 {% endblock %}

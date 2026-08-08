@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ autre.nom }} — Messagerie{% endblock %}
+{% block content %}
+  <div class="msg-shell">
+    <div class="msg-sidebar">
+      <a href="{{ url_for('messagerie.liste') }}" style="color:var(--or-vif); font-size:.8rem; text-decoration:none;">← Toutes les conversations</a>
+    </div>
+
+    <div class="msg-panel">
+      <div class="msg-panel-head">
+        <div class="msg-avatar">{{ autre.nom[0]|upper }}</div>
+        <div>
+          <div class="msg-conv-nom">{{ autre.nom }}</div>
+          <div class="msg-panel-sub">{{ autre.filiere or '' }}</div>
+        </div>
+      </div>
+
+      <div class="msg-corps" id="msg-corps">
+        {% for m in messages %}
+          <div class="msg-bulle {{ 'msg-bulle-moi' if m.expediteur_id == session.get('user_id') else 'msg-bulle-autre' }}">
+            {% if m.contenu %}{{ m.contenu }}{% endif %}
+            {% if m.fichier %}
+              {% if m.fichier.categorie == 'photo' %}
+                <img src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" alt="{{ m.fichier.nom }}">
+              {% elif m.fichier.categorie == 'video' %}
+                <video controls src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}"></video>
+              {% else %}
+                <a class="msg-bulle-fichier" href="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ m.fichier.nom }}</a>
+              {% endif %}
+            {% endif %}
+            <span class="msg-bulle-heure">{{ m.date.strftime('%H:%M') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="typing-indicator" id="typing-indicator"></div>
+
+      <form class="msg-saisie" id="form-prive" method="POST" action="{{ url_for('messagerie.envoyer_prive', autre_id=autre.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="msg-attach" for="fichier-prive">📎</label>
+        <input type="file" id="fichier-prive" name="fichier">
+        <input type="text" id="input-prive" name="contenu" placeholder="Écris un message…" autocomplete="off">
+        <button type="submit" class="msg-envoyer">➤</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const userId = {{ session.get('user_id') }};
+  const autreId = {{ autre.id }};
+  const corps = document.getElementById('msg-corps');
+  const inputPrive = document.getElementById('input-prive');
+  const formPrive = document.getElementById('form-prive');
+  const typingIndicator = document.getElementById('typing-indicator');
+
+  corps.scrollTop = corps.scrollHeight;
+
+  function bulleHTML(m, estMoi){
+    let media = '';
+    if (m.fichier) {
+      if (m.fichier.categorie === 'photo') media = `<img src="/${m.fichier.chemin}" alt="">`;
+      else if (m.fichier.categorie === 'video') media = `<video controls src="/${m.fichier.chemin}"></video>`;
+      else media = `<a class="msg-bulle-fichier" href="/${m.fichier.chemin}" target="_blank">📎 ${m.fichier.nom}</a>`;
+    }
+    const texte = m.contenu ? m.contenu.replace(/</g,'&lt;') : '';
+    return `<div class="msg-bulle ${estMoi ? 'msg-bulle-moi' : 'msg-bulle-autre'}">${texte}${media}<span class="msg-bulle-heure">${m.date}</span></div>`;
+  }
+
+  socket.on('nouveau_message_prive', (m) => {
+    const concerneCetteConv = (m.expediteur_id === autreId && m.destinataire_id === userId) ||
+                               (m.expediteur_id === userId && m.destinataire_id === autreId);
+    if (!concerneCetteConv) return;
+    corps.insertAdjacentHTML('beforeend', bulleHTML(m, m.expediteur_id === userId));
+    corps.scrollTop = corps.scrollHeight;
+  });
+
+  formPrive.addEventListener('submit', function(e){
+    const fichierInput = document.getElementById('fichier-prive');
+    if (fichierInput.files.length > 0) return; // laisse le formulaire classique gérer l'upload
+    e.preventDefault();
+    const texte = inputPrive.value.trim();
+    if (!texte) return;
+    socket.emit('message_prive', { destinataire_id: autreId, contenu: texte });
+    inputPrive.value = '';
+  });
+
+  let typingTimeout;
+  inputPrive.addEventListener('input', () => {
+    socket.emit('en_train_decrire', { destinataire_id: autreId });
+  });
+  socket.on('en_train_decrire', (data) => {
+    if (data.user_id !== autreId) return;
+    typingIndicator.textContent = "{{ autre.nom }} est en train d'écrire…";
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => { typingIndicator.textContent = ''; }, 2000);
+  });
+</script>
+{% endblock %}

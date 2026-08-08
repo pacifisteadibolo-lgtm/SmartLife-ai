@@ -1,4 +1,4 @@
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy  # noqa: F401 (compat import order)
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -130,12 +130,12 @@ class Publication(db.Model):
     id       = db.Column(db.Integer, primary_key=True)
     user_id  = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     contenu  = db.Column(db.Text)
-    type     = db.Column(db.String(20), default='texte')  # texte / fichier / audio
+    type     = db.Column(db.String(20), default='texte')  # texte / photo / video / fichier / audio
     likes    = db.Column(db.Integer, default=0)
     date     = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
-    fichiers     = db.relationship('Fichier',     backref='publication', lazy='dynamic')
+    fichiers     = db.relationship('Fichier', foreign_keys='Fichier.pub_id', backref='publication', lazy='dynamic')
     audios       = db.relationship('Audio',       backref='publication', lazy='dynamic')
     commentaires = db.relationship('Commentaire', backref='publication', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -157,12 +157,26 @@ class Fichier(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     user_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     pub_id    = db.Column(db.Integer, db.ForeignKey('publications.id'), nullable=True)
+    # Pièce jointe possible sur un message privé ou un message de groupe
+    msg_prive_id  = db.Column(db.Integer, db.ForeignKey('messages_prives.id'), nullable=True)
+    msg_groupe_id = db.Column(db.Integer, db.ForeignKey('messages_groupes.id'), nullable=True)
     nom       = db.Column(db.String(255), nullable=False)
     chemin    = db.Column(db.String(500), nullable=False)
     type_mime = db.Column(db.String(100))
     taille    = db.Column(db.Integer)   # en octets
     matiere   = db.Column(db.String(100))
     created_at= db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def categorie(self):
+        """photo / video / fichier — déduit du type MIME, pour l'affichage."""
+        if not self.type_mime:
+            return 'fichier'
+        if self.type_mime.startswith('image/'):
+            return 'photo'
+        if self.type_mime.startswith('video/'):
+            return 'video'
+        return 'fichier'
 
 
 # ─────────────────────────────────────────────
@@ -218,9 +232,81 @@ class MessagePrive(db.Model):
     expediteur_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     destinataire_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     contenu         = db.Column(db.Text)
-    type            = db.Column(db.String(20), default='texte')  # texte / audio / fichier
+    type            = db.Column(db.String(20), default='texte')  # texte / photo / video / fichier / audio
+    fichier_id      = db.Column(db.Integer, db.ForeignKey('fichiers.id'), nullable=True)
     lu              = db.Column(db.Boolean, default=False)
     date            = db.Column(db.DateTime, default=datetime.utcnow)
 
     expediteur   = db.relationship('Utilisateur', foreign_keys=[expediteur_id])
     destinataire = db.relationship('Utilisateur', foreign_keys=[destinataire_id])
+    fichier      = db.relationship('Fichier', foreign_keys=[fichier_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'expediteur_id': self.expediteur_id,
+            'destinataire_id': self.destinataire_id,
+            'contenu': self.contenu,
+            'type': self.type,
+            'date': self.date.strftime('%H:%M'),
+            'fichier': {'nom': self.fichier.nom, 'chemin': self.fichier.chemin, 'categorie': self.fichier.categorie} if self.fichier else None,
+        }
+
+
+# ─────────────────────────────────────────────
+#  11. GROUPES (discussions de groupe privées)
+# ─────────────────────────────────────────────
+class Groupe(db.Model):
+    __tablename__ = 'groupes'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    nom         = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.String(255))
+    photo       = db.Column(db.String(255), default='default_groupe.png')
+    createur_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    membres  = db.relationship('GroupeMembre', backref='groupe', lazy='dynamic', cascade='all, delete-orphan')
+    messages = db.relationship('MessageGroupe', backref='groupe', lazy='dynamic', cascade='all, delete-orphan')
+
+    def est_membre(self, user_id):
+        return self.membres.filter_by(user_id=user_id).first() is not None
+
+
+class GroupeMembre(db.Model):
+    __tablename__ = 'groupe_membres'
+
+    id        = db.Column(db.Integer, primary_key=True)
+    groupe_id = db.Column(db.Integer, db.ForeignKey('groupes.id'), nullable=False)
+    user_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    role      = db.Column(db.String(20), default='membre')  # admin / membre
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    utilisateur = db.relationship('Utilisateur')
+
+
+class MessageGroupe(db.Model):
+    __tablename__ = 'messages_groupes'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    groupe_id  = db.Column(db.Integer, db.ForeignKey('groupes.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    contenu    = db.Column(db.Text)
+    type       = db.Column(db.String(20), default='texte')  # texte / photo / video / fichier
+    fichier_id = db.Column(db.Integer, db.ForeignKey('fichiers.id'), nullable=True)
+    date       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    auteur  = db.relationship('Utilisateur')
+    fichier = db.relationship('Fichier', foreign_keys=[fichier_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'groupe_id': self.groupe_id,
+            'user_id': self.user_id,
+            'auteur_nom': self.auteur.nom,
+            'contenu': self.contenu,
+            'type': self.type,
+            'date': self.date.strftime('%H:%M'),
+            'fichier': {'nom': self.fichier.nom, 'chemin': self.fichier.chemin, 'categorie': self.fichier.categorie} if self.fichier else None,
+        }

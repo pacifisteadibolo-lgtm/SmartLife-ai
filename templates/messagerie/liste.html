@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Messagerie — SmartLife AI{% endblock %}
+{% block content %}
+  <p class="page-eyebrow">Messagerie</p>
+  <h1 class="page-title">Tes conversations</h1>
+  <p class="page-sub">Discussions privées et de groupe — visibles uniquement par les personnes concernées.</p>
+
+  <div style="display:flex; gap:.8rem; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap;">
+    <a href="#creer-groupe" class="msg-nouveau-groupe" style="display:inline-block; width:auto; text-decoration:none;">+ Nouveau groupe</a>
+    <select onchange="if(this.value) window.location = '{{ url_for('messagerie.liste') }}prive/' + this.value;"
+            style="width:auto; background:var(--ink-soft); color:var(--paper); border:1px solid #ffffff1c; border-radius:8px; padding:.55rem .7rem;">
+      <option value="">Démarrer une conversation avec…</option>
+      {% for etu in tous_les_etudiants %}
+        <option value="{{ etu.id }}">{{ etu.nom }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="msg-shell" style="height:auto;">
+    <div class="msg-sidebar" style="overflow:visible;">
+      <h2 style="font-family:var(--font-display); color:var(--or-vif); font-size:1rem; margin-top:0;">Messages privés</h2>
+      {% if conversations %}
+        {% for autre_id, data in conversations.items() %}
+          {% set autre = autres_utilisateurs.get(autre_id) %}
+          {% if autre %}
+            <a href="{{ url_for('messagerie.prive', autre_id=autre.id) }}" class="msg-conv-item">
+              <div class="msg-avatar">{{ autre.nom[0]|upper }}</div>
+              <div class="msg-conv-meta">
+                <div class="msg-conv-nom">{{ autre.nom }}</div>
+                <div class="msg-conv-apercu">{{ data.dernier.contenu or 'Pièce jointe' }}</div>
+              </div>
+              {% if data.non_lus %}<span class="msg-badge">{{ data.non_lus }}</span>{% endif %}
+            </a>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <p class="empty-hint" style="font-size:.8rem;">Aucune conversation privée pour l'instant.</p>
+      {% endif %}
+
+      <h2 style="font-family:var(--font-display); color:var(--or-vif); font-size:1rem;">Groupes</h2>
+      {% if groupes %}
+        {% for g in groupes %}
+          <a href="{{ url_for('messagerie.groupe', groupe_id=g.id) }}" class="msg-conv-item">
+            <div class="msg-avatar groupe">{{ g.nom[0]|upper }}</div>
+            <div class="msg-conv-meta">
+              <div class="msg-conv-nom">{{ g.nom }}</div>
+              <div class="msg-conv-apercu">{{ g.membres.count() }} membre(s)</div>
+            </div>
+          </a>
+        {% endfor %}
+      {% else %}
+        <p class="empty-hint" style="font-size:.8rem;">Tu n'es dans aucun groupe pour l'instant.</p>
+      {% endif %}
+    </div>
+
+    <div class="msg-panel">
+      <div class="msg-vide">
+        Choisis une conversation à gauche, ou démarre-en une nouvelle avec un·e camarade depuis son profil.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : créer un groupe -->
+  <div id="creer-groupe" class="msg-modal-overlay">
+    <div class="msg-modal">
+      <a href="#" class="msg-modal-close">✕</a>
+      <h3>Créer un groupe</h3>
+      <form method="POST" action="{{ url_for('messagerie.creer_groupe') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="nom">Nom du groupe</label>
+          <input type="text" id="nom" name="nom" required maxlength="150" placeholder="Ex : Groupe TP réseaux">
+        </div>
+        <div class="field">
+          <label for="description">Description (optionnel)</label>
+          <input type="text" id="description" name="description" maxlength="255">
+        </div>
+        <div class="field">
+          <label>Ajouter des membres</label>
+          <div class="msg-membre-liste">
+            {% for etu in tous_les_etudiants %}
+              <label class="msg-membre-item">
+                <input type="checkbox" name="membres" value="{{ etu.id }}">
+                {{ etu.nom }}
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn-primary btn-compact">Créer le groupe</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

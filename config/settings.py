@@ -45,7 +45,8 @@ class Config:
     AVATAR_FOLDER   = os.path.join('static', 'uploads', 'avatars')
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024   # 20 Mo
 
-    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'pptx', 'xlsx', 'jpg', 'jpeg', 'png', 'mp4'}
+    # photo / video / documents — voir aussi utils/fichiers.py (source de vérité pour l'upload)
+    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'pptx', 'xlsx', 'txt', 'zip', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'webm'}
     ALLOWED_AUDIO      = {'webm', 'mp3', 'ogg'}
 
     # -- IA (clé à renseigner dans .env)

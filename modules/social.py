@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from modules.database import db, Publication, Commentaire, Utilisateur
 from utils.decorators import login_required
+from utils.fichiers import enregistrer_fichier, type_publication_pour
 
 social_bp = Blueprint('social', __name__, template_folder='../templates/social')
 
@@ -21,17 +22,30 @@ def feed():
 @login_required
 def publier():
     contenu = request.form.get('contenu', '').strip()
-
-    if not contenu:
-        flash("Le message ne peut pas être vide.", 'error')
-        return redirect(url_for('social.feed'))
+    fichier_uploade = request.files.get('fichier')
 
     if len(contenu) > 2000:
         flash("Message trop long (2000 caractères max).", 'error')
         return redirect(url_for('social.feed'))
 
-    publication = Publication(user_id=session['user_id'], contenu=contenu, type='texte')
+    publication = Publication(user_id=session['user_id'], contenu=contenu or None, type='texte')
     db.session.add(publication)
+    db.session.flush()  # récupère publication.id avant de lier le fichier
+
+    fichier = None
+    if fichier_uploade and fichier_uploade.filename:
+        fichier = enregistrer_fichier(fichier_uploade, session['user_id'], pub_id=publication.id)
+        if fichier is None:
+            db.session.rollback()
+            flash("Format de fichier non autorisé.", 'error')
+            return redirect(url_for('social.feed'))
+        publication.type = type_publication_pour(fichier)
+
+    if not contenu and not fichier:
+        db.session.rollback()
+        flash("Le message ne peut pas être vide.", 'error')
+        return redirect(url_for('social.feed'))
+
     db.session.commit()
     flash("Publié !", 'success')
     return redirect(url_for('social.feed'))

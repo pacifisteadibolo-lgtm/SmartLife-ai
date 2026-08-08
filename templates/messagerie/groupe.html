@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ groupe.nom }} — Messagerie{% endblock %}
+{% block content %}
+  <div class="msg-shell">
+    <div class="msg-sidebar">
+      <a href="{{ url_for('messagerie.liste') }}" style="color:var(--or-vif); font-size:.8rem; text-decoration:none;">← Toutes les conversations</a>
+      <h2 style="font-family:var(--font-display); color:var(--or-vif); font-size:.95rem;">Membres ({{ membres|length }})</h2>
+      {% for m in membres %}
+        <div class="msg-conv-item" style="cursor:default;">
+          <div class="msg-avatar">{{ m.utilisateur.nom[0]|upper }}</div>
+          <div class="msg-conv-meta">
+            <div class="msg-conv-nom">{{ m.utilisateur.nom }}{% if m.role == 'admin' %} · admin{% endif %}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="msg-panel">
+      <div class="msg-panel-head">
+        <div class="msg-avatar groupe">{{ groupe.nom[0]|upper }}</div>
+        <div>
+          <div class="msg-conv-nom">{{ groupe.nom }}</div>
+          <div class="msg-panel-sub">{{ groupe.description or (membres|length ~ ' membres') }}</div>
+        </div>
+      </div>
+
+      <div class="msg-corps" id="msg-corps">
+        {% for m in messages %}
+          <div class="msg-bulle {{ 'msg-bulle-moi' if m.user_id == session.get('user_id') else 'msg-bulle-autre' }}">
+            {% if m.user_id != session.get('user_id') %}<span class="msg-bulle-auteur">{{ m.auteur.nom }}</span>{% endif %}
+            {% if m.contenu %}{{ m.contenu }}{% endif %}
+            {% if m.fichier %}
+              {% if m.fichier.categorie == 'photo' %}
+                <img src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" alt="{{ m.fichier.nom }}">
+              {% elif m.fichier.categorie == 'video' %}
+                <video controls src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}"></video>
+              {% else %}
+                <a class="msg-bulle-fichier" href="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ m.fichier.nom }}</a>
+              {% endif %}
+            {% endif %}
+            <span class="msg-bulle-heure">{{ m.date.strftime('%H:%M') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="typing-indicator" id="typing-indicator"></div>
+
+      <form class="msg-saisie" id="form-groupe" method="POST" action="{{ url_for('messagerie.envoyer_groupe', groupe_id=groupe.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="msg-attach" for="fichier-groupe">📎</label>
+        <input type="file" id="fichier-groupe" name="fichier">
+        <input type="text" id="input-groupe" name="contenu" placeholder="Écris un message au groupe…" autocomplete="off">
+        <button type="submit" class="msg-envoyer">➤</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const userId = {{ session.get('user_id') }};
+  const groupeId = {{ groupe.id }};
+  const corps = document.getElementById('msg-corps');
+  const inputGroupe = document.getElementById('input-groupe');
+  const formGroupe = document.getElementById('form-groupe');
+  const typingIndicator = document.getElementById('typing-indicator');
+
+  corps.scrollTop = corps.scrollHeight;
+
+  socket.on('connect', () => {
+    socket.emit('rejoindre_groupe', { groupe_id: groupeId });
+  });
+
+  function bulleHTML(m, estMoi){
+    let media = '';
+    if (m.fichier) {
+      if (m.fichier.categorie === 'photo') media = `<img src="/${m.fichier.chemin}" alt="">`;
+      else if (m.fichier.categorie === 'video') media = `<video controls src="/${m.fichier.chemin}"></video>`;
+      else media = `<a class="msg-bulle-fichier" href="/${m.fichier.chemin}" target="_blank">📎 ${m.fichier.nom}</a>`;
+    }
+    const auteur = !estMoi ? `<span class="msg-bulle-auteur">${m.auteur_nom}</span>` : '';
+    const texte = m.contenu ? m.contenu.replace(/</g,'&lt;') : '';
+    return `<div class="msg-bulle ${estMoi ? 'msg-bulle-moi' : 'msg-bulle-autre'}">${auteur}${texte}${media}<span class="msg-bulle-heure">${m.date}</span></div>`;
+  }
+
+  socket.on('nouveau_message_groupe', (m) => {
+    if (m.groupe_id !== groupeId) return;
+    corps.insertAdjacentHTML('beforeend', bulleHTML(m, m.user_id === userId));
+    corps.scrollTop = corps.scrollHeight;
+  });
+
+  formGroupe.addEventListener('submit', function(e){
+    const fichierInput = document.getElementById('fichier-groupe');
+    if (fichierInput.files.length > 0) return; // laisse le formulaire classique gérer l'upload
+    e.preventDefault();
+    const texte = inputGroupe.value.trim();
+    if (!texte) return;
+    socket.emit('message_groupe', { groupe_id: groupeId, contenu: texte });
+    inputGroupe.value = '';
+  });
+
+  let typingTimeout;
+  inputGroupe.addEventListener('input', () => {
+    socket.emit('en_train_decrire', { groupe_id: groupeId });
+  });
+  socket.on('en_train_decrire', (data) => {
+    if (data.groupe_id !== groupeId || data.user_id === userId) return;
+    typingIndicator.textContent = "Quelqu'un est en train d'écrire…";
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => { typingIndicator.textContent = ''; }, 2000);
+  });
+</script>
+{% endblock %}

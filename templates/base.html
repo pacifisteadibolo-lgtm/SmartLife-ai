@@ -18,6 +18,7 @@
         <a href="{{ url_for('planner.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('planner.') }}">Planner</a>
         <a href="{{ url_for('finance.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('finance.') }}">Finance</a>
         <a href="{{ url_for('social.feed') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('social.') }}">UniShare</a>
+        <a href="{{ url_for('messagerie.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('messagerie.') }}">Messagerie</a>
         <a href="{{ url_for('ai.assistant') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('ai.') }}">Assistant IA</a>
       </nav>
       <div class="app-user">
@@ -39,5 +40,6 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+  {% block scripts %}{% endblock %}
 </body>
 </html>
