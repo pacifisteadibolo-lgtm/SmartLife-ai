@@ -168,4 +168,4 @@ CREATE INDEX idx_messages_destinataire ON messages_prives(destinataire_id);
 -- ──────────────────────────────────────────
 INSERT INTO utilisateurs (nom, email, mot_de_passe, filiere, niveau, bio) VALUES
 ('Alice Dupont', 'alice@univ.tg', 'hashed_pwd_ici', 'Informatique', 'Licence 3', 'Passionnée de dev web'),
-('Bob Martin',  'bob@univ.tg',   'hashed_pwd_ici', 'Mathématiques','Master 1',  'Fan d\'IA et de maths');
+('Bob Martin',  'bob@univ.tg',   'hashed_pwd_ici', 'Mathématiques','Master 1',  'Fan d''IA et de maths');

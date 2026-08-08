@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SmartLife AI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="app-body">
+  <div class="app-shell">
+    <aside class="app-sidenav">
+      <div class="app-brand">
+        <span class="app-brand-dot"></span>
+        SmartLife <em>AI</em>
+      </div>
+      <nav class="app-nav">
+        <a href="{{ url_for('dashboard.accueil') }}" class="{{ 'active' if request.endpoint == 'dashboard.accueil' }}">Tableau de bord</a>
+        <a href="{{ url_for('planner.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('planner.') }}">Planner</a>
+        <a href="{{ url_for('finance.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('finance.') }}">Finance</a>
+        <a href="{{ url_for('social.feed') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('social.') }}">UniShare</a>
+        <a href="{{ url_for('ai.assistant') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('ai.') }}">Assistant IA</a>
+      </nav>
+      <div class="app-user">
+        <div class="app-user-name">{{ session.get('user_nom', '') }}</div>
+        <a href="{{ url_for('auth.logout') }}" class="app-logout">Déconnexion</a>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

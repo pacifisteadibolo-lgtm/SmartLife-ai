@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Assistant IA — SmartLife AI{% endblock %}
+{% block content %}
+  <p class="page-eyebrow">Assistant IA</p>
+  <h1 class="page-title">Pose ta question</h1>
+  <p class="page-sub">Aide aux devoirs, explications de cours, organisation — demande ce que tu veux.</p>
+
+  {% if erreur %}
+    <div class="flash flash-error" style="margin-bottom:1.5rem;">{{ erreur }}</div>
+  {% endif %}
+
+  <div class="section-block chat-block">
+    <div class="chat-history">
+      {% if historique %}
+        {% for tour in historique %}
+          <div class="chat-bubble chat-{{ tour.role }}">
+            {{ tour.contenu }}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-hint">Aucun échange pour l'instant. Pose ta première question ci-dessous.</p>
+      {% endif %}
+    </div>
+
+    <form method="POST" action="{{ url_for('ai.assistant') }}" class="chat-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="question" placeholder="Ex : Explique-moi les indices en Python" required autofocus>
+      <button type="submit" class="btn-primary btn-compact">Envoyer</button>
+    </form>
+
+    {% if historique %}
+      <form method="POST" action="{{ url_for('ai.effacer') }}" style="margin-top:.8rem;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="task-delete" style="font-size:.78rem;">Effacer la conversation</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}

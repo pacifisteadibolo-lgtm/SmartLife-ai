@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — SmartLife AI{% endblock %}
+{% block content %}
+  <p class="page-eyebrow">Tableau de bord</p>
+  <h1 class="page-title">Salut {{ nom }} 👋</h1>
+  <p class="page-sub">Voici où tu en es aujourd'hui.</p>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="label">Tâches en cours</div>
+      <div class="value lamp">{{ nb_taches_en_cours }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Solde du mois</div>
+      <div class="value {{ 'danger' if solde < 0 else 'mint' }}">{{ '%.0f'|format(solde) }} FCFA</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Dépenses ce mois</div>
+      <div class="value">{{ '%.0f'|format(total_depenses) }} FCFA</div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-head">
+      <h2>Prochaines échéances</h2>
+      <a href="{{ url_for('planner.liste') }}" class="section-head-link">Voir tout →</a>
+    </div>
+    {% if taches %}
+      {% for t in taches %}
+        <div class="task-row">
+          <span>{{ t.titre }}</span>
+          <span class="task-prio {{ t.priorite }}">{{ t.priorite }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-hint">Aucune tâche pour l'instant — le module Planner arrive bientôt.</p>
+    {% endif %}
+  </div>
+{% endblock %}

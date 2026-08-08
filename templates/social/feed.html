@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}UniShare — SmartLife AI{% endblock %}
+{% block content %}
+  <p class="page-eyebrow">UniShare</p>
+  <h1 class="page-title">Le fil du campus</h1>
+  <p class="page-sub">Partage une question, une astuce, un doc — visible par tous les étudiant·e·s.</p>
+
+  <div class="section-block">
+    <form method="POST" action="{{ url_for('social.publier') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="contenu">Quoi de neuf ?</label>
+        <textarea id="contenu" name="contenu" rows="3" maxlength="2000"
+                  placeholder="Ex : Quelqu'un a les slides du cours de réseaux d'hier ?" required></textarea>
+      </div>
+      <button type="submit" class="btn-primary btn-compact">Publier</button>
+    </form>
+  </div>
+
+  {% if publications %}
+    {% for pub in publications %}
+      <div class="post-card">
+        <div class="post-head">
+          <span class="post-author">{{ pub.auteur.nom }}</span>
+          <span class="post-date">{{ pub.date.strftime('%d/%m %H:%M') }}</span>
+        </div>
+        <p class="post-body">{{ pub.contenu }}</p>
+        <div class="post-actions">
+          <form method="POST" action="{{ url_for('social.liker', pub_id=pub.id) }}" class="post-like-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="post-like">♥ {{ pub.likes or 0 }}</button>
+          </form>
+          {% if pub.user_id == session.get('user_id') %}
+            <form method="POST" action="{{ url_for('social.supprimer', pub_id=pub.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="task-delete">Supprimer</button>
+            </form>
+          {% endif %}
+        </div>
+
+        {% if pub.commentaires.count() %}
+          <div class="post-comments">
+            {% for c in pub.commentaires %}
+              <div class="post-comment">
+                <span class="post-comment-author">{{ c.auteur.nom }}</span> {{ c.contenu }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('social.commenter', pub_id=pub.id) }}" class="post-comment-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="text" name="contenu" placeholder="Répondre…" maxlength="500" required>
+          <button type="submit">↵</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty-hint">Aucune publication pour l'instant — sois le premier à écrire quelque chose !</p>
+  {% endif %}
+{% endblock %}
