@@ -1,29 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
 
 :root{
-  --ink:        #14131F;
-  --ink-soft:   #201E33;
-  --paper:      #F7F5F0;
-  --paper-dim:  #B9B6C9;
+  /* ── SmartLife AI — identité "cahier de campus" ──
+     Encre pin foncée + parchemin chaud + touches ocre/indigo/corail,
+     loin des clichés IA (crème+terracotta, noir+néon, broadsheet). */
+  --ink:        #1B2A22;   /* encre — fond principal, vert-pin profond */
+  --ink-soft:   #24352B;   /* encre plus claire — panneaux */
+  --paper:      #F7F0DE;   /* parchemin chaud — texte clair / surfaces papier */
+  --paper-dim:  #B7AE93;   /* parchemin atténué — texte secondaire */
 
-  /* Palette SmartLife AI — jaune doré / blanc vif / bleu façon Facebook */
-  --lamp:       #F4C430;      /* jaune doré — accent principal */
-  --lamp-soft:  #F4C43033;
-  --or:         #F4C430;
-  --or-vif:     #FFD84D;
-  --blanc-vif:  #FFFFFF;
-  --fb-blue:    #1877F2;      /* bleu façon Facebook — accent secondaire / liens */
-  --fb-blue-soft:#1877F224;
-  --fb-blue-dark:#125FC7;
-  --mint:       #7FD9A8;
-  --danger:     #E37B6C;
+  --lamp:       #E2882E;   /* ocre — accent principal, "encre de tampon" */
+  --lamp-soft:  #E2882E2e;
+  --or:         #E2882E;
+  --or-vif:     #F2A23D;
 
-  --degrade-or: linear-gradient(135deg, #FFD84D 0%, #F4C430 55%, #E0A80E 100%);
-  --degrade-bleu: linear-gradient(135deg, #4E9BFF 0%, #1877F2 100%);
+  --fb-blue:     #2F5D8A;  /* indigo denim — accent secondaire, liens/messages */
+  --fb-blue-soft:#2F5D8A26;
+  --fb-blue-dark:#24486E;
 
-  --font-display: 'Fraunces', serif;
+  --mint:       #6FB98F;   /* sauge — succès */
+  --danger:     #E4573D;   /* corail — alerte / j'aime */
+  --blanc-vif:  #FBF6E9;   /* blanc chaud — texte sur fonds foncés (bulles, boutons) */
+
+  --degrade-or:   linear-gradient(135deg, #F2A23D 0%, #E2882E 55%, #C96A16 100%);
+  --degrade-bleu: linear-gradient(135deg, #4A7FB5 0%, #2F5D8A 100%);
+
+  --font-display: 'Bricolage Grotesque', serif;
   --font-body:    'Work Sans', sans-serif;
   --font-mono:    'IBM Plex Mono', monospace;
+
+  /* grain de papier discret, réutilisé sur les surfaces "parchemin" */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
 *{ box-sizing:border-box; }
@@ -34,6 +41,17 @@ body{
   color:var(--paper);
   font-family:var(--font-body);
   -webkit-font-smoothing:antialiased;
+  position:relative;
+}
+
+/* Grain de papier discret sur tout le fond — évite le plat "app SaaS" */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:var(--grain);
+  pointer-events:none;
+  z-index:0;
 }
 
 a{ color:inherit; }
@@ -58,14 +76,24 @@ a{ color:inherit; }
 }
 
 .auth-brand::before{
-  /* la "veilleuse" -- signature element */
-  content:"";
+  /* le tampon encreur -- signature element */
+  content:"SmartLife";
   position:absolute;
-  top:4rem; left:3rem;
-  width:10px; height:10px;
+  top:3.5rem; left:3rem;
+  width:76px; height:76px;
   border-radius:50%;
-  background:var(--lamp);
-  box-shadow:0 0 24px 6px var(--lamp-soft);
+  border:2px dashed var(--lamp);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:.62rem;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--or-vif);
+  transform:rotate(-11deg);
+  box-shadow:0 0 0 4px transparent;
 }
 
 .brand-mark{
@@ -74,7 +102,8 @@ a{ color:inherit; }
   letter-spacing:.14em;
   text-transform:uppercase;
   color:var(--paper-dim);
-  margin-left:1.6rem;
+  margin-left:6.4rem;
+  padding-top:.6rem;
 }
 
 .brand-quote{
@@ -229,11 +258,18 @@ a{ color:inherit; }
 .app-brand em{ color:var(--lamp); font-style:normal; }
 
 .app-brand-dot{
-  width:9px; height:9px;
+  width:22px; height:22px;
   border-radius:50%;
-  background:var(--lamp);
-  box-shadow:0 0 14px 3px var(--lamp-soft);
+  border:2px solid var(--lamp);
+  display:flex; align-items:center; justify-content:center;
+  transform:rotate(-8deg);
   flex-shrink:0;
+  position:relative;
+}
+.app-brand-dot::after{
+  content:"✦";
+  font-size:.6rem;
+  color:var(--lamp);
 }
 
 .app-nav{
@@ -253,7 +289,14 @@ a{ color:inherit; }
 }
 
 .app-nav a:hover{ background:#ffffff0d; color:var(--paper); }
-.app-nav a.active{ background:var(--lamp-soft); color:var(--lamp); font-weight:600; }
+.app-nav a.active{
+  background:var(--lamp-soft);
+  color:var(--or-vif);
+  font-weight:700;
+  position:relative;
+  border-left:3px solid var(--lamp);   /* onglet de classeur, comme un intercalaire de cahier */
+  padding-left:calc(.7rem - 3px);
+}
 .app-nav a.app-nav-soon{ opacity:.4; cursor:default; }
 .app-nav a.app-nav-soon:hover{ background:none; color:var(--paper-dim); }
 
