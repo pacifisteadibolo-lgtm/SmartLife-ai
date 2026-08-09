@@ -1,82 +1,129 @@
 {% extends "base.html" %}
 {% block title %}UniShare — SmartLife AI{% endblock %}
 {% block content %}
-  <p class="page-eyebrow">UniShare</p>
-  <h1 class="page-title">Le fil du campus</h1>
-  <p class="page-sub">Partage une question, une astuce, une photo, une vidéo ou un doc — visible par tous les étudiant·e·s.</p>
+  <div class="fb-shell">
 
-  <div class="section-block">
-    <form method="POST" action="{{ url_for('social.publier') }}" enctype="multipart/form-data">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="field">
-        <label for="contenu">Quoi de neuf ?</label>
-        <textarea id="contenu" name="contenu" rows="3" maxlength="2000"
-                  placeholder="Ex : Quelqu'un a les slides du cours de réseaux d'hier ?"></textarea>
-      </div>
-      <div class="upload-row">
-        <label class="upload-label" for="fichier-pub">📎 Ajouter une photo, vidéo ou un fichier</label>
-        <span class="upload-filename" id="upload-filename"></span>
-      </div>
-      <input type="file" id="fichier-pub" name="fichier" accept="image/*,video/*,.pdf,.docx,.pptx,.xlsx,.txt,.zip">
-      <button type="submit" class="btn-primary btn-compact" style="margin-top:.8rem;">Publier</button>
-    </form>
-  </div>
+    <!-- Colonne gauche : raccourcis -->
+    <div class="fb-col-gauche">
+      <a href="{{ url_for('dashboard.accueil') }}" class="fb-raccourci">
+        <span class="fb-raccourci-icone" style="background:linear-gradient(135deg,#2E7CF6,#57A0FF);">🏠</span>
+        Tableau de bord
+      </a>
+      <a href="{{ url_for('planner.liste') }}" class="fb-raccourci">
+        <span class="fb-raccourci-icone" style="background:linear-gradient(135deg,#8B5CF6,#B794F6);">✓</span>
+        Planner
+      </a>
+      <a href="{{ url_for('finance.liste') }}" class="fb-raccourci">
+        <span class="fb-raccourci-icone" style="background:linear-gradient(135deg,#FF7A1A,#FFB347);">₣</span>
+        Finance
+      </a>
+      <a href="{{ url_for('messagerie.liste') }}" class="fb-raccourci">
+        <span class="fb-raccourci-icone" style="background:linear-gradient(135deg,#16C7B0,#5EE8D5);">💬</span>
+        Messagerie
+      </a>
+      <a href="{{ url_for('ai.assistant') }}" class="fb-raccourci">
+        <span class="fb-raccourci-icone" style="background:linear-gradient(135deg,#2BB673,#7BE3A8);">✦</span>
+        Assistant IA
+      </a>
+    </div>
 
-  {% if publications %}
-    {% for pub in publications %}
-      <div class="post-card">
-        <div class="post-head">
-          <span class="post-author">{{ pub.auteur.nom }}</span>
-          <span class="post-date">{{ pub.date.strftime('%d/%m %H:%M') }}</span>
-        </div>
-        {% if pub.contenu %}<p class="post-body">{{ pub.contenu }}</p>{% endif %}
+    <!-- Colonne centrale : composer + fil -->
+    <div class="fb-col-centre">
+      <p class="page-eyebrow">UniShare</p>
+      <h1 class="page-title">Le fil du campus</h1>
 
-        {% set media = pub.fichiers.first() %}
-        {% if media %}
-          <div class="post-media">
-            {% if media.categorie == 'photo' %}
-              <img src="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}" alt="">
-            {% elif media.categorie == 'video' %}
-              <video controls src="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}"></video>
-            {% else %}
-              <a class="post-media-fichier" href="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ media.nom }}</a>
-            {% endif %}
+      <div class="fb-composer">
+        <form method="POST" action="{{ url_for('social.publier') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="fb-composer-top">
+            <span class="fb-avatar avatar-{{ session.get('user_id', 0) % 6 }}">{{ session.get('user_nom', '?')[0]|upper }}</span>
+            <textarea name="contenu" rows="1" maxlength="2000"
+                      placeholder="Quoi de neuf, {{ session.get('user_nom', '').split(' ')[0] }} ?"
+                      onfocus="this.rows=3"></textarea>
           </div>
-        {% endif %}
-
-        <div class="post-actions">
-          <form method="POST" action="{{ url_for('social.liker', pub_id=pub.id) }}" class="post-like-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="post-like">♥ {{ pub.likes or 0 }}</button>
-          </form>
-          {% if pub.user_id == session.get('user_id') %}
-            <form method="POST" action="{{ url_for('social.supprimer', pub_id=pub.id) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="task-delete">Supprimer</button>
-            </form>
-          {% endif %}
-        </div>
-
-        {% if pub.commentaires.count() %}
-          <div class="post-comments">
-            {% for c in pub.commentaires %}
-              <div class="post-comment">
-                <span class="post-comment-author">{{ c.auteur.nom }}</span> {{ c.contenu }}
-              </div>
-            {% endfor %}
+          <input type="file" id="fichier-pub" name="fichier" accept="image/*,video/*,.pdf,.docx,.pptx,.xlsx,.txt,.zip" style="display:none;">
+          <hr>
+          <div class="fb-composer-actions">
+            <label for="fichier-pub" class="fb-upload-btn">📷 Photo / vidéo / fichier <span id="upload-filename" style="color:var(--paper-dim); font-weight:400;"></span></label>
+            <button type="submit" class="fb-publier-btn">Publier</button>
           </div>
-        {% endif %}
-
-        <form method="POST" action="{{ url_for('social.commenter', pub_id=pub.id) }}" class="post-comment-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="text" name="contenu" placeholder="Répondre…" maxlength="500" required>
-          <button type="submit">↵</button>
         </form>
       </div>
-    {% endfor %}
-  {% else %}
-    <p class="empty-hint">Aucune publication pour l'instant — sois le premier à écrire quelque chose !</p>
-  {% endif %}
+
+      {% if publications %}
+        {% for pub in publications %}
+          <div class="post-card">
+            <div class="post-head">
+              <span class="fb-avatar avatar-{{ pub.user_id % 6 }}">{{ pub.auteur.nom[0]|upper }}</span>
+              <div class="post-head-meta">
+                <span class="post-author">{{ pub.auteur.nom }}
+                  {% if pub.type != 'texte' %}<span class="post-type-tag {{ pub.type }}">{{ pub.type }}</span>{% endif %}
+                </span>
+                <span class="post-date">{{ pub.date.strftime('%d/%m %H:%M') }}</span>
+              </div>
+            </div>
+            {% if pub.contenu %}<p class="post-body">{{ pub.contenu }}</p>{% endif %}
+
+            {% set media = pub.fichiers.first() %}
+            {% if media %}
+              <div class="post-media">
+                {% if media.categorie == 'photo' %}
+                  <img src="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}" alt="">
+                {% elif media.categorie == 'video' %}
+                  <video controls src="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}"></video>
+                {% else %}
+                  <a class="post-media-fichier" href="{{ url_for('static', filename=media.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ media.nom }}</a>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            <div class="post-actions">
+              <form method="POST" action="{{ url_for('social.liker', pub_id=pub.id) }}" class="post-like-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="post-like">♥ {{ pub.likes or 0 }}</button>
+              </form>
+              {% if pub.user_id == session.get('user_id') %}
+                <form method="POST" action="{{ url_for('social.supprimer', pub_id=pub.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="task-delete">Supprimer</button>
+                </form>
+              {% endif %}
+            </div>
+
+            {% if pub.commentaires.count() %}
+              <div class="post-comments">
+                {% for c in pub.commentaires %}
+                  <div class="post-comment">
+                    <span class="post-comment-author">{{ c.auteur.nom }}</span> {{ c.contenu }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('social.commenter', pub_id=pub.id) }}" class="post-comment-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="text" name="contenu" placeholder="Répondre…" maxlength="500" required>
+              <button type="submit">↵</button>
+            </form>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-hint">Aucune publication pour l'instant — sois le premier à écrire quelque chose !</p>
+      {% endif %}
+    </div>
+
+    <!-- Colonne droite : suggestions -->
+    <div class="fb-col-droite">
+      <p class="fb-titre-colonne">Étudiants</p>
+      {% for etu in tous_les_etudiants %}
+        <a href="{{ url_for('messagerie.prive', autre_id=etu.id) }}" class="fb-suggestion">
+          <span class="fb-avatar avatar-{{ etu.id % 6 }}">{{ etu.nom[0]|upper }}</span>
+          {{ etu.nom }}
+        </a>
+      {% endfor %}
+    </div>
+
+  </div>
 {% endblock %}
 
 {% block scripts %}
@@ -84,7 +131,7 @@
   const inputFichier = document.getElementById('fichier-pub');
   const nomFichier = document.getElementById('upload-filename');
   inputFichier.addEventListener('change', () => {
-    nomFichier.textContent = inputFichier.files.length ? inputFichier.files[0].name : '';
+    nomFichier.textContent = inputFichier.files.length ? '· ' + inputFichier.files[0].name : '';
   });
 </script>
 {% endblock %}

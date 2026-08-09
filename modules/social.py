@@ -15,7 +15,14 @@ def feed():
         .limit(30)
         .all()
     )
-    return render_template('social/feed.html', publications=publications)
+    tous_les_etudiants = (
+        Utilisateur.query
+        .filter(Utilisateur.id != session['user_id'])
+        .order_by(Utilisateur.nom)
+        .limit(12)
+        .all()
+    )
+    return render_template('social/feed.html', publications=publications, tous_les_etudiants=tous_les_etudiants)
 
 
 @social_bp.route('/publier', methods=['POST'])
