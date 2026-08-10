@@ -11,7 +11,7 @@ def create_app():
     app.config.from_object(Config)
 
     db.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*", async_mode='threading', manage_session=True)
+    socketio.init_app(app, cors_allowed_origins="*", async_mode='eventlet', manage_session=True)
     csrf.init_app(app)
 
     # Blueprints
