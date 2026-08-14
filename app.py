@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, session, redirect, url_for
 from flask_wtf.csrf import CSRFProtect
 from config.settings import Config
@@ -11,8 +14,14 @@ def create_app():
     app.config.from_object(Config)
 
     db.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*", manage_session=True,
-                   ping_timeout=10, ping_interval=8)
+    # async_mode='eventlet' correspond au worker gunicorn (voir Procfile). Necessite
+    # dnspython==2.3.0 (voir requirements.txt) pour qu'eventlet s'importe correctement
+    # (les versions recentes de dnspython cassent le module greendns d'eventlet).
+    # ping_interval/ping_timeout : valeurs par defaut de Socket.IO. Des valeurs trop
+    # courtes provoquent des deconnexions en boucle des qu'une reponse met un peu plus
+    # de temps, ce qui donne l'impression que les messages se perdent ou sont lents.
+    socketio.init_app(app, cors_allowed_origins="*", async_mode='eventlet',
+                       manage_session=True, ping_interval=25, ping_timeout=20)
     csrf.init_app(app)
 
     # Blueprints

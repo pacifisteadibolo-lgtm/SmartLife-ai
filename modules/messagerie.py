@@ -101,6 +101,7 @@ def envoyer_prive(autre_id):
     db.session.flush()
     if fichier:
         fichier.msg_prive_id = msg.id
+        msg.fichier_id = fichier.id
     db.session.commit()
 
     payload = msg.to_dict()
@@ -177,6 +178,7 @@ def envoyer_groupe(groupe_id):
     db.session.flush()
     if fichier:
         fichier.msg_groupe_id = msg.id
+        msg.fichier_id = fichier.id
     db.session.commit()
 
     socketio.emit('nouveau_message_groupe', msg.to_dict(), room=f"groupe_{groupe_id}")
