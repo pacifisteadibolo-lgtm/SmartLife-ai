@@ -169,13 +169,15 @@ class Fichier(db.Model):
 
     @property
     def categorie(self):
-        """photo / video / fichier — déduit du type MIME, pour l'affichage."""
+        """photo / video / audio / fichier — déduit du type MIME, pour l'affichage."""
         if not self.type_mime:
             return 'fichier'
         if self.type_mime.startswith('image/'):
             return 'photo'
         if self.type_mime.startswith('video/'):
             return 'video'
+        if self.type_mime.startswith('audio/'):
+            return 'audio'
         return 'fichier'
 
 
@@ -232,9 +234,11 @@ class MessagePrive(db.Model):
     expediteur_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     destinataire_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     contenu         = db.Column(db.Text)
-    type            = db.Column(db.String(20), default='texte')  # texte / photo / video / fichier / audio
+    type            = db.Column(db.String(20), default='texte')  # texte / photo / video / audio / fichier
     fichier_id      = db.Column(db.Integer, db.ForeignKey('fichiers.id'), nullable=True)
     lu              = db.Column(db.Boolean, default=False)
+    modifie         = db.Column(db.Boolean, default=False)
+    supprime        = db.Column(db.Boolean, default=False)
     date            = db.Column(db.DateTime, default=datetime.utcnow)
 
     expediteur   = db.relationship('Utilisateur', foreign_keys=[expediteur_id])
@@ -246,10 +250,14 @@ class MessagePrive(db.Model):
             'id': self.id,
             'expediteur_id': self.expediteur_id,
             'destinataire_id': self.destinataire_id,
-            'contenu': self.contenu,
+            'contenu': "Message supprimé" if self.supprime else self.contenu,
             'type': self.type,
+            'modifie': self.modifie,
+            'supprime': self.supprime,
             'date': self.date.strftime('%H:%M'),
-            'fichier': {'nom': self.fichier.nom, 'chemin': self.fichier.chemin, 'categorie': self.fichier.categorie} if self.fichier else None,
+            'fichier': None if self.supprime else (
+                {'nom': self.fichier.nom, 'chemin': self.fichier.chemin, 'categorie': self.fichier.categorie} if self.fichier else None
+            ),
         }
 
 
@@ -292,8 +300,10 @@ class MessageGroupe(db.Model):
     groupe_id  = db.Column(db.Integer, db.ForeignKey('groupes.id'), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
     contenu    = db.Column(db.Text)
-    type       = db.Column(db.String(20), default='texte')  # texte / photo / video / fichier
+    type       = db.Column(db.String(20), default='texte')  # texte / photo / video / audio / fichier
     fichier_id = db.Column(db.Integer, db.ForeignKey('fichiers.id'), nullable=True)
+    modifie    = db.Column(db.Boolean, default=False)
+    supprime   = db.Column(db.Boolean, default=False)
     date       = db.Column(db.DateTime, default=datetime.utcnow)
 
     auteur  = db.relationship('Utilisateur')
@@ -305,8 +315,28 @@ class MessageGroupe(db.Model):
             'groupe_id': self.groupe_id,
             'user_id': self.user_id,
             'auteur_nom': self.auteur.nom,
-            'contenu': self.contenu,
+            'contenu': "Message supprimé" if self.supprime else self.contenu,
             'type': self.type,
+            'modifie': self.modifie,
+            'supprime': self.supprime,
             'date': self.date.strftime('%H:%M'),
-            'fichier': {'nom': self.fichier.nom, 'chemin': self.fichier.chemin, 'categorie': self.fichier.categorie} if self.fichier else None,
+            'fichier': None if self.supprime else (
+                {'nom': self.fichier.nom, 'chemin': self.fichier.chemin, 'categorie': self.fichier.categorie} if self.fichier else None
+            ),
         }
+
+
+# ─────────────────────────────────────────────
+#  12. EFFACEMENT DE CONVERSATION (par utilisateur, comme WhatsApp)
+#  Effacer une discussion ne supprime rien chez l'autre personne : on
+#  retient juste, pour CET utilisateur, à partir de quand ne plus
+#  afficher les anciens messages d'une conversation donnée.
+# ─────────────────────────────────────────────
+class EffacementConversation(db.Model):
+    __tablename__ = 'effacements_conversation'
+
+    id        = db.Column(db.Integer, primary_key=True)
+    user_id   = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    autre_id  = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=True)   # conversation privée
+    groupe_id = db.Column(db.Integer, db.ForeignKey('groupes.id'), nullable=True)        # conversation de groupe
+    efface_le = db.Column(db.DateTime, default=datetime.utcnow)

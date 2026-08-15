@@ -18,26 +18,46 @@
     <div class="msg-panel">
       <div class="msg-panel-head">
         <div class="msg-avatar groupe">{{ groupe.nom[0]|upper }}</div>
-        <div>
+        <div style="flex:1;">
           <div class="msg-conv-nom">{{ groupe.nom }}</div>
           <div class="msg-panel-sub">{{ groupe.description or (membres|length ~ ' membres') }}</div>
         </div>
+        <form method="POST" action="{{ url_for('messagerie.effacer_conversation_groupe', groupe_id=groupe.id) }}"
+              onsubmit="return confirm('Effacer tout l\'historique de ce groupe pour tous les membres ? Cette action est irréversible.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="msg-effacer-conv" title="Effacer la conversation">🗑</button>
+        </form>
       </div>
 
       <div class="msg-corps" id="msg-corps">
         {% for m in messages %}
-          <div class="msg-bulle {{ 'msg-bulle-moi' if m.user_id == session.get('user_id') else 'msg-bulle-autre' }}">
-            {% if m.user_id != session.get('user_id') %}<span class="msg-bulle-auteur">{{ m.auteur.nom }}</span>{% endif %}
-            {% if m.contenu %}{{ m.contenu }}{% endif %}
-            {% if m.fichier %}
-              {% if m.fichier.categorie == 'photo' %}
-                <img src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" alt="{{ m.fichier.nom }}">
-              {% elif m.fichier.categorie == 'video' %}
-                <video controls src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}"></video>
-              {% else %}
-                <a class="msg-bulle-fichier" href="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ m.fichier.nom }}</a>
-              {% endif %}
+          <div class="msg-bulle {{ 'msg-bulle-moi' if m.user_id == session.get('user_id') else 'msg-bulle-autre' }}" data-msg-id="{{ m.id }}">
+            {% if m.user_id == session.get('user_id') and not m.supprime %}
+              <div class="msg-actions">
+                <button type="button" class="msg-action-btn" onclick="activerEdition({{ m.id }})" title="Modifier">✎</button>
+                <button type="button" class="msg-action-btn" onclick="supprimerMessage({{ m.id }})" title="Supprimer">🗑</button>
+              </div>
             {% endif %}
+            {% if m.user_id != session.get('user_id') %}<span class="msg-bulle-auteur">{{ m.auteur.nom }}</span>{% endif %}
+            <div class="msg-bulle-contenu">
+              {% if m.supprime %}
+                <em class="msg-supprime">Message supprimé</em>
+              {% else %}
+                {% if m.contenu %}<span class="msg-texte">{{ m.contenu }}</span>{% endif %}
+                {% if m.modifie %}<span class="msg-tag-modifie"> (modifié)</span>{% endif %}
+                {% if m.fichier %}
+                  {% if m.fichier.categorie == 'photo' %}
+                    <img src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" alt="{{ m.fichier.nom }}">
+                  {% elif m.fichier.categorie == 'video' %}
+                    <video controls src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}"></video>
+                  {% elif m.fichier.categorie == 'audio' %}
+                    <audio controls src="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}"></audio>
+                  {% else %}
+                    <a class="msg-bulle-fichier" href="{{ url_for('static', filename=m.fichier.chemin.replace('static/', '', 1)) }}" target="_blank">📎 {{ m.fichier.nom }}</a>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            </div>
             <span class="msg-bulle-heure">{{ m.date.strftime('%H:%M') }}</span>
           </div>
         {% endfor %}
@@ -49,15 +69,20 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label class="msg-attach" for="fichier-groupe">📎</label>
         <input type="file" id="fichier-groupe" name="fichier">
+        <button type="button" class="msg-emoji-btn" id="btn-emoji">😊</button>
         <input type="text" id="input-groupe" name="contenu" placeholder="Écris un message au groupe…" autocomplete="off">
+        <button type="button" class="msg-micro-btn" id="btn-micro" title="Message vocal">🎤</button>
         <button type="submit" class="msg-envoyer">➤</button>
       </form>
+      <div class="msg-emoji-panel" id="emoji-panel"></div>
+      <div class="msg-record-indicateur" id="record-indicateur" style="display:none;">🔴 Enregistrement… <button type="button" id="btn-stop-record">Envoyer</button> <button type="button" id="btn-annuler-record">Annuler</button></div>
     </div>
   </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/messagerie-commun.js') }}"></script>
 <script>
   const socket = io();
   const userId = {{ session.get('user_id') }};
@@ -66,8 +91,15 @@
   const inputGroupe = document.getElementById('input-groupe');
   const formGroupe = document.getElementById('form-groupe');
   const typingIndicator = document.getElementById('typing-indicator');
+  const csrfToken = "{{ csrf_token() }}";
 
   corps.scrollTop = corps.scrollHeight;
+  initEmojiPicker('btn-emoji', 'emoji-panel', inputGroupe);
+  initEnregistrementVocal({
+    boutonId: 'btn-micro', indicateurId: 'record-indicateur',
+    boutonStopId: 'btn-stop-record', boutonAnnulerId: 'btn-annuler-record',
+    urlEnvoi: "{{ url_for('messagerie.envoyer_groupe', groupe_id=groupe.id) }}", csrfToken,
+  });
 
   socket.on('connect', () => {
     socket.emit('rejoindre_groupe', { groupe_id: groupeId });
@@ -78,11 +110,21 @@
     if (m.fichier) {
       if (m.fichier.categorie === 'photo') media = `<img src="/${m.fichier.chemin}" alt="">`;
       else if (m.fichier.categorie === 'video') media = `<video controls src="/${m.fichier.chemin}"></video>`;
+      else if (m.fichier.categorie === 'audio') media = `<audio controls src="/${m.fichier.chemin}"></audio>`;
       else media = `<a class="msg-bulle-fichier" href="/${m.fichier.chemin}" target="_blank">📎 ${m.fichier.nom}</a>`;
     }
     const auteur = !estMoi ? `<span class="msg-bulle-auteur">${m.auteur_nom}</span>` : '';
-    const texte = m.contenu ? m.contenu.replace(/</g,'&lt;') : '';
-    return `<div class="msg-bulle ${estMoi ? 'msg-bulle-moi' : 'msg-bulle-autre'}">${auteur}${texte}${media}<span class="msg-bulle-heure">${m.date}</span></div>`;
+    const texte = m.contenu ? `<span class="msg-texte">${m.contenu.replace(/</g,'&lt;')}</span>` : '';
+    const modifieTag = m.modifie ? ' <span class="msg-tag-modifie">(modifié)</span>' : '';
+    const actions = estMoi ? `<div class="msg-actions">
+        <button type="button" class="msg-action-btn" onclick="activerEdition(${m.id})" title="Modifier">✎</button>
+        <button type="button" class="msg-action-btn" onclick="supprimerMessage(${m.id})" title="Supprimer">🗑</button>
+      </div>` : '';
+    return `<div class="msg-bulle ${estMoi ? 'msg-bulle-moi' : 'msg-bulle-autre'}" data-msg-id="${m.id}">
+      ${actions}${auteur}
+      <div class="msg-bulle-contenu">${texte}${modifieTag}${media}</div>
+      <span class="msg-bulle-heure">${m.date}</span>
+    </div>`;
   }
 
   socket.on('nouveau_message_groupe', (m) => {
@@ -90,6 +132,53 @@
     corps.insertAdjacentHTML('beforeend', bulleHTML(m, m.user_id === userId));
     corps.scrollTop = corps.scrollHeight;
   });
+
+  socket.on('message_groupe_modifie', (m) => {
+    const bulle = corps.querySelector(`[data-msg-id="${m.id}"] .msg-bulle-contenu`);
+    if (bulle) bulle.innerHTML = `<span class="msg-texte">${(m.contenu||'').replace(/</g,'&lt;')}</span> <span class="msg-tag-modifie">(modifié)</span>`;
+  });
+
+  socket.on('message_groupe_supprime', (m) => {
+    if (m.groupe_id !== groupeId) return;
+    const bulle = corps.querySelector(`[data-msg-id="${m.id}"]`);
+    if (bulle) {
+      bulle.querySelectorAll('.msg-actions').forEach(el => el.remove());
+      const c = bulle.querySelector('.msg-bulle-contenu');
+      if (c) c.innerHTML = '<em class="msg-supprime">Message supprimé</em>';
+    }
+  });
+
+  socket.on('conversation_groupe_effacee', (data) => {
+    if (data.groupe_id !== groupeId) return;
+    window.location = "{{ url_for('messagerie.liste') }}";
+  });
+
+  window.activerEdition = function(msgId){
+    const bulle = corps.querySelector(`[data-msg-id="${msgId}"] .msg-bulle-contenu`);
+    const texteActuel = bulle.querySelector('.msg-texte') ? bulle.querySelector('.msg-texte').textContent : '';
+    bulle.innerHTML = `<form class="msg-edit-form" data-msg-id="${msgId}">
+        <input type="text" value="${texteActuel.replace(/"/g,'&quot;')}" class="msg-edit-input">
+        <button type="submit">✓</button>
+      </form>`;
+    const form = bulle.querySelector('.msg-edit-form');
+    form.querySelector('input').focus();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nouveauTexte = form.querySelector('input').value.trim();
+      if (!nouveauTexte) return;
+      const fd = new FormData();
+      fd.append('csrf_token', csrfToken);
+      fd.append('contenu', nouveauTexte);
+      await fetch(`/messagerie/groupe/${groupeId}/message/${msgId}/modifier`, { method: 'POST', body: fd });
+    });
+  };
+
+  window.supprimerMessage = async function(msgId){
+    if (!confirm('Supprimer ce message ?')) return;
+    const fd = new FormData();
+    fd.append('csrf_token', csrfToken);
+    await fetch(`/messagerie/groupe/${groupeId}/message/${msgId}/supprimer`, { method: 'POST', body: fd });
+  };
 
   formGroupe.addEventListener('submit', function(e){
     const fichierInput = document.getElementById('fichier-groupe');
