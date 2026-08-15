@@ -340,3 +340,19 @@ class EffacementConversation(db.Model):
     autre_id  = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=True)   # conversation privée
     groupe_id = db.Column(db.Integer, db.ForeignKey('groupes.id'), nullable=True)        # conversation de groupe
     efface_le = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
+#  13. ABONNEMENTS AUX NOTIFICATIONS PUSH
+#  Un navigateur = un abonnement. Un utilisateur peut avoir plusieurs
+#  abonnements (téléphone + PC par exemple) — on envoie à tous.
+# ─────────────────────────────────────────────
+class AbonnementPush(db.Model):
+    __tablename__ = 'abonnements_push'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
+    endpoint   = db.Column(db.Text, nullable=False, unique=True)
+    p256dh     = db.Column(db.String(255), nullable=False)
+    auth       = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

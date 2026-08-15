@@ -1429,3 +1429,18 @@ a{ color:inherit; }
 }
 
 .msg-bulle audio{ margin-top:.3rem; max-width:100%; }
+
+.app-notif-btn{
+  display:none;
+  width:100%;
+  background:var(--lamp-soft);
+  color:var(--lamp);
+  border:1px solid var(--lamp);
+  border-radius:8px;
+  padding:.5rem;
+  font-size:.78rem;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:.7rem;
+}
+.app-notif-btn:hover{ background:var(--lamp); color:var(--blanc-vif); }

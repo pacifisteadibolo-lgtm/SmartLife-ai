@@ -1,7 +1,8 @@
 from flask import session
 from flask_socketio import join_room, emit, disconnect
 from modules.extensions import socketio
-from modules.database import db, MessagePrive, Groupe, MessageGroupe
+from modules.database import db, MessagePrive, Groupe, MessageGroupe, GroupeMembre, Utilisateur
+from utils.push import envoyer_notification
 
 
 def _room_utilisateur(user_id):
@@ -53,6 +54,16 @@ def enregistrer_evenements_socket():
         emit('nouveau_message_prive', payload, room=_room_utilisateur(destinataire_id))
         emit('nouveau_message_prive', payload, room=_room_utilisateur(user_id))
 
+        expediteur = db.session.get(Utilisateur, user_id)
+        apercu = contenu if len(contenu) <= 80 else contenu[:77] + '…'
+        envoyer_notification(
+            destinataire_id,
+            titre=expediteur.nom if expediteur else 'Nouveau message',
+            corps=apercu,
+            url=f'/messagerie/prive/{user_id}',
+            tag=f'prive-{user_id}',
+        )
+
     @socketio.on('message_groupe')
     def on_message_groupe(data):
         user_id = session.get('user_id')
@@ -71,6 +82,18 @@ def enregistrer_evenements_socket():
         db.session.commit()
 
         emit('nouveau_message_groupe', msg.to_dict(), room=_room_groupe(groupe_id))
+
+        expediteur = db.session.get(Utilisateur, user_id)
+        apercu = contenu if len(contenu) <= 80 else contenu[:77] + '…'
+        membres = GroupeMembre.query.filter(GroupeMembre.groupe_id == groupe_id, GroupeMembre.user_id != user_id).all()
+        for membre in membres:
+            envoyer_notification(
+                membre.user_id,
+                titre=f"{expediteur.nom} · {grp.nom}" if expediteur else grp.nom,
+                corps=apercu,
+                url=f'/messagerie/groupe/{groupe_id}',
+                tag=f'groupe-{groupe_id}',
+            )
 
     @socketio.on('en_train_decrire')
     def on_typing(data):

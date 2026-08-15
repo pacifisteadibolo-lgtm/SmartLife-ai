@@ -5,6 +5,7 @@ from modules.database import (
 )
 from utils.decorators import login_required
 from utils.fichiers import enregistrer_fichier, type_publication_pour
+from utils.push import envoyer_notification
 from modules.extensions import socketio
 
 messagerie_bp = Blueprint('messagerie', __name__, template_folder='../templates/messagerie')
@@ -118,6 +119,17 @@ def envoyer_prive(autre_id):
     payload = msg.to_dict()
     socketio.emit('nouveau_message_prive', payload, room=f"user_{autre_id}")
     socketio.emit('nouveau_message_prive', payload, room=f"user_{user_id}")
+
+    expediteur = Utilisateur.query.get(user_id)
+    apercu = contenu if contenu else ("📎 " + (fichier.nom if fichier else "pièce jointe"))
+    apercu = apercu if len(apercu) <= 80 else apercu[:77] + '…'
+    envoyer_notification(
+        autre_id,
+        titre=expediteur.nom if expediteur else 'Nouveau message',
+        corps=apercu,
+        url=f'/messagerie/prive/{user_id}',
+        tag=f'prive-{user_id}',
+    )
 
     return redirect(url_for('messagerie.prive', autre_id=autre_id))
 
@@ -253,6 +265,19 @@ def envoyer_groupe(groupe_id):
     db.session.commit()
 
     socketio.emit('nouveau_message_groupe', msg.to_dict(), room=f"groupe_{groupe_id}")
+
+    expediteur = Utilisateur.query.get(user_id)
+    apercu = contenu if contenu else ("📎 " + (fichier.nom if fichier else "pièce jointe"))
+    apercu = apercu if len(apercu) <= 80 else apercu[:77] + '…'
+    membres = GroupeMembre.query.filter(GroupeMembre.groupe_id == groupe_id, GroupeMembre.user_id != user_id).all()
+    for membre in membres:
+        envoyer_notification(
+            membre.user_id,
+            titre=f"{expediteur.nom} · {grp.nom}" if expediteur else grp.nom,
+            corps=apercu,
+            url=f'/messagerie/groupe/{groupe_id}',
+            tag=f'groupe-{groupe_id}',
+        )
 
     return redirect(url_for('messagerie.groupe', groupe_id=groupe_id))
 
