@@ -5,12 +5,10 @@ from utils.decorators import login_required
 ai_bp = Blueprint('ai', __name__, template_folder='../templates/ai')
 
 # API Google Gemini — niveau gratuit (clé à obtenir sur https://aistudio.google.com/apikey)
-# Modèle "flash" : rapide, gratuit, solide sur les questions académiques (maths, code,
-# sciences, méthodologie). Aucune IA ne peut être garantie fiable à 97 % sur tous les
-# sujets — on limite donc les hallucinations en lui demandant explicitement de dire
-# "je ne suis pas sûr" plutôt que d'inventer une réponse, et on affiche cet avertissement
-# à l'utilisateur (voir templates/ai/assistant.html).
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+# On utilise l'alias "gemini-flash-latest", que Google garantit de faire pointer vers son
+# modèle Flash le plus récent (avec préavis en cas de changement majeur) — plus fiable
+# dans la durée qu'un nom de modèle figé, qui finit par être retiré (ex. gemini-1.5-flash).
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
 SYSTEM_PROMPT = (
     "Tu es l'assistant pédagogique de SmartLife AI, une application pour étudiants. "

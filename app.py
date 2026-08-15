@@ -1,12 +1,13 @@
-import eventlet
-eventlet.monkey_patch()
-
 from flask import Flask, session, redirect, url_for
 from flask_wtf.csrf import CSRFProtect
 from config.settings import Config
 from modules.database import db
 from modules.extensions import socketio
 
+# Remarque : pas de eventlet.monkey_patch() ici — le worker gunicorn "eventlet" (voir
+# Procfile) s'en charge déjà, automatiquement, avant même de charger ce fichier. Un
+# second appel ici arrivait trop tard (apres que gunicorn/logging aient deja cree des
+# verrous), d'ou l'avertissement anodin "RLock(s) were not greened" vu dans les logs.
 csrf = CSRFProtect()
 
 def create_app():
