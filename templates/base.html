@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SmartLife AI{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <!-- PWA : permet l'installation sur mobile ("Ajouter à l'écran d'accueil") -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#2E7CF6">
+  <link rel="icon" href="{{ url_for('static', filename='img/icone-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icone-192.png') }}">
 </head>
 <body class="app-body">
   <div class="app-shell">
