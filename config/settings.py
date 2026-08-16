@@ -55,6 +55,6 @@ class Config:
     AI_MODEL     = os.environ.get('AI_MODEL', 'gpt-4o-mini')
 
     # -- Notifications push (messages reçus, même application fermée)
-    VAPID_PUBLIC_KEY     = os.environ.get('VAPID_PUBLIC_KEY', '')
-    VAPID_PRIVATE_KEY_B64= os.environ.get('VAPID_PRIVATE_KEY_B64', '')
-    VAPID_CLAIMS_EMAIL   = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:contact@smartlife-ai.example')
+    VAPID_PUBLIC_KEY   = os.environ.get('VAPID_PUBLIC_KEY', '')
+    VAPID_PRIVATE_KEY  = os.environ.get('VAPID_PRIVATE_KEY', '')
+    VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:contact@smartlife-ai.example')

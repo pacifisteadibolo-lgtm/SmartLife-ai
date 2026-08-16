@@ -23,6 +23,8 @@
       </nav>
       <div class="app-user">
         <button type="button" id="btn-activer-notifs" class="app-notif-btn" style="display:none;">🔔 Activer les notifications</button>
+        <button type="button" id="btn-notifs-bloquees" class="app-notif-btn app-notif-btn-warn" style="display:none;" title="Tu as refusé les notifications dans ton navigateur — il faut les réactiver manuellement dans ses réglages pour ce site.">⚠️ Notifications bloquées</button>
+        <button type="button" id="btn-tester-notif" class="app-notif-btn app-notif-btn-test" style="display:none;">🔔 Tester la notification</button>
         <div class="app-user-name">{{ session.get('user_nom', '') }}</div>
         <a href="{{ url_for('auth.logout') }}" class="app-logout">Déconnexion</a>
       </div>
@@ -54,18 +56,30 @@
     }
 
     async function sAbonnerAuxNotifications(silencieux) {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.warn('Ce navigateur ne supporte pas les notifications push.');
+        return false;
+      }
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+
         if (!silencieux) {
           const permission = await Notification.requestPermission();
-          if (permission !== 'granted') return;
+          if (permission !== 'granted') {
+            afficherEtatNotifications();
+            return false;
+          }
         } else if (Notification.permission !== 'granted') {
-          return;
+          return false;
         }
+
         const reponseCle = await fetch("{{ url_for('notifications.cle_publique') }}");
         const { cle } = await reponseCle.json();
-        if (!cle) return; // notifications non configurées côté serveur
+        if (!cle) {
+          console.error("Notifications non configurées côté serveur (VAPID_PUBLIC_KEY manquante).");
+          return false;
+        }
 
         let abonnement = await registration.pushManager.getSubscription();
         if (!abonnement) {
@@ -74,27 +88,73 @@
             applicationServerKey: urlBase64ToUint8Array(cle),
           });
         }
-        await fetch("{{ url_for('notifications.abonner') }}", {
+
+        const reponse = await fetch("{{ url_for('notifications.abonner') }}", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(abonnement),
         });
-        const btn = document.getElementById('btn-activer-notifs');
-        if (btn) btn.style.display = 'none';
+        if (!reponse.ok) {
+          console.error("L'enregistrement de l'abonnement a échoué côté serveur.");
+          return false;
+        }
+
+        afficherEtatNotifications();
+        return true;
       } catch (err) {
-        console.warn('Notifications push indisponibles :', err);
+        console.error('Notifications push indisponibles :', err);
+        return false;
+      }
+    }
+
+    function afficherEtatNotifications() {
+      const btnActiver = document.getElementById('btn-activer-notifs');
+      const btnBloque = document.getElementById('btn-notifs-bloquees');
+      const btnTester = document.getElementById('btn-tester-notif');
+      if (!btnActiver || !btnBloque || !btnTester) return;
+
+      btnActiver.style.display = 'none';
+      btnBloque.style.display = 'none';
+      btnTester.style.display = 'none';
+
+      if (Notification.permission === 'granted') {
+        btnTester.style.display = 'block';
+      } else if (Notification.permission === 'denied') {
+        btnBloque.style.display = 'block';
+      } else {
+        btnActiver.style.display = 'block';
       }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('btn-activer-notifs');
       if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
+      afficherEtatNotifications();
+
       if (Notification.permission === 'granted') {
-        sAbonnerAuxNotifications(true);   // déjà autorisé -> (ré)abonnement silencieux
-      } else if (Notification.permission === 'default' && btn) {
-        btn.style.display = 'block';      // pas encore demandé -> on propose, sans forcer
-        btn.addEventListener('click', () => sAbonnerAuxNotifications(false));
+        sAbonnerAuxNotifications(true);   // déjà autorisé -> (ré)abonnement silencieux, au cas où
+      }
+
+      const btnActiver = document.getElementById('btn-activer-notifs');
+      if (btnActiver) btnActiver.addEventListener('click', () => sAbonnerAuxNotifications(false));
+
+      const btnTester = document.getElementById('btn-tester-notif');
+      if (btnTester) {
+        btnTester.addEventListener('click', async () => {
+          btnTester.textContent = '… envoi en cours';
+          try {
+            const reponse = await fetch("{{ url_for('notifications.tester') }}", { method: 'POST' });
+            const data = await reponse.json();
+            if (data.ok) {
+              btnTester.textContent = '✅ Envoyée — regarde tes notifications';
+            } else {
+              btnTester.textContent = '❌ ' + (data.erreur || 'Échec');
+            }
+          } catch (err) {
+            btnTester.textContent = '❌ Erreur réseau';
+          }
+          setTimeout(() => { btnTester.textContent = '🔔 Tester la notification'; }, 4000);
+        });
       }
     });
   </script>

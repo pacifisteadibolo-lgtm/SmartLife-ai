@@ -1444,3 +1444,82 @@ a{ color:inherit; }
   margin-bottom:.7rem;
 }
 .app-notif-btn:hover{ background:var(--lamp); color:var(--blanc-vif); }
+
+.app-notif-btn-warn{
+  background:#F0393B1a; color:var(--danger); border-color:var(--danger);
+}
+.app-notif-btn-warn:hover{ background:var(--danger); color:var(--blanc-vif); }
+
+.app-notif-btn-test{
+  background:#2BB6731a; color:var(--mint); border-color:var(--mint);
+}
+.app-notif-btn-test:hover{ background:var(--mint); color:var(--blanc-vif); }
+
+/* ════════════════════════════════════════════════════════════
+   CORRECTIFS RESPONSIVE MOBILE — nouvelles fonctionnalités
+   ════════════════════════════════════════════════════════════
+   Cause racine du débordement : plusieurs champs texte/formulaires
+   vivent dans des conteneurs flex sans min-width:0. Par défaut, un
+   enfant flex refuse de rétrécir sous sa largeur naturelle — sur un
+   écran étroit, ça pousse tout le reste hors du cadre au lieu de
+   s'adapter. On corrige ça en priorité, puis on ajuste l'espacement
+   pour les petits écrans. */
+
+.msg-saisie,
+.fb-composer-top,
+.ia-composer,
+.msg-record-indicateur{
+  min-width:0;
+}
+.msg-saisie input[type="text"],
+.fb-composer textarea,
+.ia-composer input[type="text"]{
+  min-width:0;
+}
+
+@media (max-width: 780px){
+  /* Le bouton "Activer les notifications" ne doit pas s'étirer sur
+     toute la largeur une fois le menu latéral devenu une barre
+     horizontale — sinon il pousse tout le reste hors de l'écran. */
+  .app-notif-btn{
+    width:auto;
+    white-space:nowrap;
+    margin-bottom:0;
+    font-size:.74rem;
+    padding:.45rem .7rem;
+  }
+
+  /* Les actions sur un message (modifier/supprimer) reposent sur
+     :hover, qui n'existe pas au toucher — sur mobile, elles restent
+     donc invisibles et inutilisables. On les affiche en permanence,
+     en plus petit, repositionnées pour ne jamais sortir du cadre. */
+  .msg-actions{
+    display:flex;
+    position:static;
+    justify-content:flex-end;
+    background:none;
+    border:none;
+    box-shadow:none;
+    padding:0 0 .2rem;
+  }
+  .msg-bulle:hover .msg-actions{ display:flex; }
+
+  .msg-saisie{ padding:.8rem 1rem; gap:.4rem; }
+  .msg-emoji-panel{ grid-template-columns:repeat(6, 1fr); margin:0 1rem .8rem; }
+  .msg-record-indicateur{ flex-wrap:wrap; padding:.6rem 1rem; }
+
+  .fb-composer{ padding:.9rem; }
+  .msg-panel-head{ flex-wrap:wrap; row-gap:.4rem; }
+}
+
+@media (max-width: 480px){
+  /* En dessous de ~480px, on retire les icônes les moins essentielles
+     de la barre de saisie pour garder le champ texte et le bouton
+     d'envoi bien visibles, sans que rien ne déborde. */
+  .msg-saisie{ padding:.7rem .8rem; gap:.3rem; }
+  .msg-saisie label.msg-attach,
+  .msg-emoji-btn{ font-size:1rem; }
+  .msg-envoyer{ width:36px; height:36px; }
+  .msg-avatar{ width:34px; height:34px; font-size:.78rem; }
+  .msg-emoji-panel{ grid-template-columns:repeat(5, 1fr); }
+}
