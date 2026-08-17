@@ -45,7 +45,10 @@ body{
   font-family:var(--font-body);
   -webkit-font-smoothing:antialiased;
   position:relative;
+  max-width:100%;
+  overflow-x:hidden;
 }
+html{ max-width:100%; overflow-x:hidden; }
 
 a{ color:inherit; }
 
@@ -1134,6 +1137,7 @@ a{ color:inherit; }
 @media (max-width: 780px){
   .msg-shell{ grid-template-columns:1fr; height:auto; }
   .msg-sidebar{ max-height:280px; }
+  .msg-sidebar, .msg-panel{ min-width:0; }
 }
 
 /* ════════════════════════════════════════════════════════════
