@@ -1527,3 +1527,152 @@ a{ color:inherit; }
   .msg-avatar{ width:34px; height:34px; font-size:.78rem; }
   .msg-emoji-panel{ grid-template-columns:repeat(5, 1fr); }
 }
+
+/* ════════════════════════════════════════════════════════════
+   APPELS AUDIO / VIDÉO
+   ════════════════════════════════════════════════════════════ */
+
+.msg-appel-btn{
+  background:none;
+  border:none;
+  font-size:1.15rem;
+  cursor:pointer;
+  padding:.3rem .5rem;
+  border-radius:8px;
+  flex-shrink:0;
+}
+.msg-appel-btn:hover{ background:#00000008; }
+
+/* ── Modale "appel entrant" ─────────────────────────────────── */
+.modale-appel-overlay{
+  display:none;
+  position:fixed; inset:0;
+  background:#000000b0;
+  z-index:200;
+  align-items:center; justify-content:center;
+}
+
+.modale-appel{
+  background:var(--ink-soft);
+  border-radius:20px;
+  padding:2.2rem 2rem;
+  width:min(320px, 88vw);
+  text-align:center;
+  box-shadow:0 20px 60px #00000055;
+  animation:apparition-modale .25s ease;
+}
+@keyframes apparition-modale{
+  from{ transform:scale(.9); opacity:0; }
+  to{ transform:scale(1); opacity:1; }
+}
+
+.modale-appel-avatar{
+  width:76px; height:76px;
+  border-radius:50%;
+  background:var(--degrade-vif);
+  display:flex; align-items:center; justify-content:center;
+  font-size:2rem;
+  margin:0 auto 1rem;
+  animation:pulse-appel 1.4s infinite;
+}
+@keyframes pulse-appel{
+  0%, 100%{ box-shadow:0 0 0 0 #2E7CF655; }
+  50%{ box-shadow:0 0 0 14px #2E7CF600; }
+}
+
+.modale-appel-type{ font-size:.8rem; color:var(--paper-dim); margin:0 0 .3rem; text-transform:uppercase; letter-spacing:.04em; }
+.modale-appel h3{ font-family:var(--font-display); font-size:1.3rem; margin:0 0 1.6rem; color:var(--paper); }
+
+.modale-appel-actions{ display:flex; gap:.8rem; justify-content:center; }
+.btn-appel-refuser, .btn-appel-accepter{
+  flex:1;
+  border:none;
+  border-radius:12px;
+  padding:.8rem;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+}
+.btn-appel-refuser{ background:#F0393B1a; color:var(--danger); }
+.btn-appel-refuser:hover{ background:var(--danger); color:#fff; }
+.btn-appel-accepter{ background:var(--mint); color:#fff; }
+.btn-appel-accepter:hover{ filter:brightness(1.08); }
+
+/* ── Écran d'appel en cours (plein écran) ──────────────────── */
+.ecran-appel{
+  display:none;
+  position:fixed; inset:0;
+  background:#0B0E13;
+  z-index:190;
+  flex-direction:column;
+  color:#fff;
+}
+
+.ecran-appel-header{
+  text-align:center;
+  padding:1.6rem 1rem .8rem;
+  flex-shrink:0;
+}
+.ecran-appel-header h3{ font-family:var(--font-display); font-size:1.3rem; margin:0 0 .3rem; }
+.ecran-appel-header p{ font-size:.85rem; color:#9AA3B2; margin:0; }
+
+.grille-video-distantes{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:.6rem;
+  padding:.6rem 1rem;
+  align-content:center;
+  overflow-y:auto;
+}
+.appel-video-distante-conteneur{
+  background:#141920;
+  border-radius:16px;
+  overflow:hidden;
+  aspect-ratio:4/3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.appel-video-distante-conteneur video{ width:100%; height:100%; object-fit:cover; }
+
+.video-locale-conteneur{
+  position:absolute;
+  bottom:6.5rem; right:1rem;
+  width:110px; height:150px;
+  border-radius:14px;
+  overflow:hidden;
+  border:2px solid #ffffff33;
+  box-shadow:0 8px 24px #00000066;
+  background:#141920;
+}
+#video-locale{ width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+
+.ecran-appel-controles{
+  display:flex;
+  justify-content:center;
+  gap:1rem;
+  padding:1.4rem;
+  flex-shrink:0;
+}
+.btn-controle-appel{
+  width:56px; height:56px;
+  border-radius:50%;
+  border:none;
+  background:#ffffff1a;
+  color:#fff;
+  font-size:1.3rem;
+  cursor:pointer;
+}
+.btn-controle-appel:hover{ background:#ffffff2e; }
+.btn-controle-appel.btn-raccrocher{
+  background:var(--danger);
+  transform:rotate(135deg);
+}
+.btn-controle-appel.btn-raccrocher:hover{ filter:brightness(1.1); }
+
+@media (max-width: 600px){
+  .video-locale-conteneur{ width:84px; height:112px; bottom:6rem; right:.7rem; }
+  .grille-video-distantes{ grid-template-columns:1fr; padding:.5rem; }
+  .btn-controle-appel{ width:50px; height:50px; font-size:1.1rem; }
+}

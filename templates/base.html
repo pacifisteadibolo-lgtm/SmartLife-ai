@@ -49,9 +49,64 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <!-- ═══ APPELS AUDIO/VIDÉO — disponibles sur toute l'application ═══ -->
+  <audio id="audio-sonnerie" src="{{ url_for('static', filename='audio/sonnerie.wav') }}" preload="auto"></audio>
+
+  <div id="modale-appel-entrant" class="modale-appel-overlay">
+    <div class="modale-appel">
+      <div class="modale-appel-avatar">📞</div>
+      <p id="appel-entrant-type" class="modale-appel-type">Appel entrant</p>
+      <h3 id="appel-entrant-nom">—</h3>
+      <div class="modale-appel-actions">
+        <button type="button" class="btn-appel-refuser" onclick="Appels.refuserAppel(parseInt(document.getElementById('modale-appel-entrant').dataset.appelantId))">✕ Refuser</button>
+        <button type="button" class="btn-appel-accepter" onclick="Appels.accepterAppel(parseInt(document.getElementById('modale-appel-entrant').dataset.appelantId))">✓ Accepter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ecran-appel" class="ecran-appel">
+    <div class="ecran-appel-header">
+      <h3 id="appel-titre">—</h3>
+      <p id="appel-statut">Connexion…</p>
+    </div>
+    <div id="grille-video-distantes" class="grille-video-distantes"></div>
+    <div id="video-locale-conteneur" class="video-locale-conteneur">
+      <video id="video-locale" autoplay muted playsinline></video>
+    </div>
+    <div class="ecran-appel-controles">
+      <button type="button" class="btn-controle-appel" onclick="Appels.basculerMicro()" title="Micro">🎤</button>
+      <button type="button" class="btn-controle-appel" onclick="Appels.basculerCamera()" title="Caméra">🎥</button>
+      <button type="button" class="btn-controle-appel btn-raccrocher" onclick="Appels.terminerAppel()" title="Raccrocher">📞</button>
+    </div>
+  </div>
+
   {% block scripts %}{% endblock %}
 
   {% if session.get('user_id') %}
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    // Connexion Socket.IO unique, partagée par toute l'application (et pas
+    // seulement les pages de messagerie) — indispensable pour qu'un appel
+    // entrant ou un message puisse être signalé même en dehors de la
+    // conversation concernée (ex: pendant que tu es sur le tableau de bord).
+    window.socket = io();
+    window.SMARTLIFE_USER_NOM = "{{ session.get('user_nom', '')|e }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/appels.js') }}"></script>
+  <script>
+    Appels.init(window.socket, {{ session.get('user_id') }}, window.SMARTLIFE_USER_NOM);
+
+    // Point d'entrée unique utilisé par les boutons 📞/🎥 des pages de
+    // conversation (privée ou de groupe) — voir prive.html / groupe.html.
+    function demarrerAppel(options) {
+      if (options.destinataire_id) {
+        Appels.demarrerAppelPrive(options.destinataire_id, options.nom, options.type);
+      } else if (options.groupe_id) {
+        Appels.demarrerAppelGroupe(options.groupe_id, options.nom, options.type);
+      }
+    }
+  </script>
   <script>
     // ── Notifications push : messages reçus même application fermée ──
     function urlBase64ToUint8Array(base64String) {

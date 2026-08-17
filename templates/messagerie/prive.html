@@ -13,8 +13,10 @@
           <div class="msg-conv-nom">{{ autre.nom }}</div>
           <div class="msg-panel-sub">{{ autre.filiere or '' }}</div>
         </div>
+        <button type="button" class="msg-appel-btn" onclick="demarrerAppel({destinataire_id: {{ autre.id }}, type: 'audio', nom: '{{ autre.nom|e }}'})" title="Appel audio">📞</button>
+        <button type="button" class="msg-appel-btn" onclick="demarrerAppel({destinataire_id: {{ autre.id }}, type: 'video', nom: '{{ autre.nom|e }}'})" title="Appel vidéo">🎥</button>
         <form method="POST" action="{{ url_for('messagerie.effacer_conversation_privee', autre_id=autre.id) }}"
-              onsubmit="return confirm('Effacer toute la conversation avec {{ autre.nom }} ? Cette action est irréversible pour les deux personnes.');">
+              onsubmit="return confirm('Effacer cette conversation de ton côté ? {{ autre.nom }} gardera son propre historique intact.');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="msg-effacer-conv" title="Effacer la conversation">🗑</button>
         </form>
@@ -71,10 +73,9 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/messagerie-commun.js') }}"></script>
 <script>
-  const socket = io();
+  const socket = window.socket;
   const userId = {{ session.get('user_id') }};
   const autreId = {{ autre.id }};
   const corps = document.getElementById('msg-corps');

@@ -22,8 +22,10 @@
           <div class="msg-conv-nom">{{ groupe.nom }}</div>
           <div class="msg-panel-sub">{{ groupe.description or (membres|length ~ ' membres') }}</div>
         </div>
+        <button type="button" class="msg-appel-btn" onclick="demarrerAppel({groupe_id: {{ groupe.id }}, type: 'audio', nom: '{{ groupe.nom|e }}'})" title="Appel audio de groupe">📞</button>
+        <button type="button" class="msg-appel-btn" onclick="demarrerAppel({groupe_id: {{ groupe.id }}, type: 'video', nom: '{{ groupe.nom|e }}'})" title="Appel vidéo de groupe">🎥</button>
         <form method="POST" action="{{ url_for('messagerie.effacer_conversation_groupe', groupe_id=groupe.id) }}"
-              onsubmit="return confirm('Effacer tout l\'historique de ce groupe pour tous les membres ? Cette action est irréversible.');">
+              onsubmit="return confirm('Effacer cet historique de groupe de ton côté ? Les autres membres garderont le leur intact.');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="msg-effacer-conv" title="Effacer la conversation">🗑</button>
         </form>
@@ -81,10 +83,9 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="{{ url_for('static', filename='js/messagerie-commun.js') }}"></script>
 <script>
-  const socket = io();
+  const socket = window.socket;
   const userId = {{ session.get('user_id') }};
   const groupeId = {{ groupe.id }};
   const corps = document.getElementById('msg-corps');
