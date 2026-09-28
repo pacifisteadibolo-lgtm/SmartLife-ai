@@ -1,0 +1,21 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Connexion — SmartLife AI{% endblock %}
+{% block content %}
+  <h1>Content de te revoir</h1>
+  <p class="auth-sub">Connecte-toi pour reprendre où tu t'es arrêté·e.</p>
+
+  <form method="POST" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autofocus placeholder="toi@univ.tg">
+    </div>
+    <div class="field">
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" name="password" required placeholder="••••••••">
+    </div>
+    <button type="submit" class="btn-primary">Se connecter</button>
+  </form>
+
+  <p class="auth-switch">Pas encore de compte ? <a href="{{ url_for('auth.register') }}">Créer un compte</a></p>
+{% endblock %}

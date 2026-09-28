@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+static/uploads/files/*
+static/uploads/audio/*
+static/uploads/avatars/*
+!static/uploads/files/.gitkeep
+!static/uploads/audio/.gitkeep
+!static/uploads/avatars/.gitkeep

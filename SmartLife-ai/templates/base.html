@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SmartLife AI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <!-- PWA : permet l'installation sur mobile ("Ajouter à l'écran d'accueil") -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#2E7CF6">
+  <link rel="icon" href="{{ url_for('static', filename='img/icone-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icone-192.png') }}">
+</head>
+<body class="app-body">
+  <div class="app-shell">
+    <aside class="app-sidenav">
+      <div class="app-brand">
+        <span class="app-brand-dot"></span>
+        SmartLife <em>AI</em>
+      </div>
+      <nav class="app-nav">
+        <a href="{{ url_for('dashboard.accueil') }}" class="{{ 'active' if request.endpoint == 'dashboard.accueil' }}">Tableau de bord</a>
+        <a href="{{ url_for('planner.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('planner.') }}">Planner</a>
+        <a href="{{ url_for('finance.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('finance.') }}">Finance</a>
+        <a href="{{ url_for('social.feed') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('social.') }}">UniShare</a>
+        <a href="{{ url_for('messagerie.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('messagerie.') }}">Messagerie</a>
+        <a href="{{ url_for('ai.assistant') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('ai.') }}">Assistant IA</a>
+      </nav>
+      <div class="app-user">
+        <button type="button" id="btn-activer-notifs" class="app-notif-btn" style="display:none;">🔔 Activer les notifications</button>
+        <button type="button" id="btn-notifs-bloquees" class="app-notif-btn app-notif-btn-warn" style="display:none;" title="Tu as refusé les notifications dans ton navigateur — il faut les réactiver manuellement dans ses réglages pour ce site.">⚠️ Notifications bloquées</button>
+        <button type="button" id="btn-tester-notif" class="app-notif-btn app-notif-btn-test" style="display:none;">🔔 Tester la notification</button>
+        <div class="app-user-name">{{ session.get('user_nom', '') }}</div>
+        <a href="{{ url_for('auth.logout') }}" class="app-logout">Déconnexion</a>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- ═══ APPELS AUDIO/VIDÉO — disponibles sur toute l'application ═══ -->
+  <audio id="audio-sonnerie" src="{{ url_for('static', filename='audio/sonnerie.wav') }}" preload="auto"></audio>
+
+  <div id="modale-appel-entrant" class="modale-appel-overlay">
+    <div class="modale-appel">
+      <div class="modale-appel-avatar">📞</div>
+      <p id="appel-entrant-type" class="modale-appel-type">Appel entrant</p>
+      <h3 id="appel-entrant-nom">—</h3>
+      <div class="modale-appel-actions">
+        <button type="button" class="btn-appel-refuser" onclick="Appels.refuserAppel(parseInt(document.getElementById('modale-appel-entrant').dataset.appelantId))">✕ Refuser</button>
+        <button type="button" class="btn-appel-accepter" onclick="Appels.accepterAppel(parseInt(document.getElementById('modale-appel-entrant').dataset.appelantId))">✓ Accepter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ecran-appel" class="ecran-appel">
+    <div class="ecran-appel-header">
+      <h3 id="appel-titre">—</h3>
+      <p id="appel-statut">Connexion…</p>
+    </div>
+    <div id="grille-video-distantes" class="grille-video-distantes"></div>
+    <div id="video-locale-conteneur" class="video-locale-conteneur">
+      <video id="video-locale" autoplay muted playsinline></video>
+    </div>
+    <div class="ecran-appel-controles">
+      <button type="button" class="btn-controle-appel" onclick="Appels.basculerMicro()" title="Micro">🎤</button>
+      <button type="button" class="btn-controle-appel" onclick="Appels.basculerCamera()" title="Caméra">🎥</button>
+      <button type="button" class="btn-controle-appel btn-raccrocher" onclick="Appels.terminerAppel()" title="Raccrocher">📞</button>
+    </div>
+  </div>
+
+  {% block scripts %}{% endblock %}
+
+  {% if session.get('user_id') %}
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    // Connexion Socket.IO unique, partagée par toute l'application (et pas
+    // seulement les pages de messagerie) — indispensable pour qu'un appel
+    // entrant ou un message puisse être signalé même en dehors de la
+    // conversation concernée (ex: pendant que tu es sur le tableau de bord).
+    window.socket = io();
+    window.SMARTLIFE_USER_NOM = "{{ session.get('user_nom', '')|e }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/appels.js') }}"></script>
+  <script>
+    Appels.init(window.socket, {{ session.get('user_id') }}, window.SMARTLIFE_USER_NOM);
+
+    // Point d'entrée unique utilisé par les boutons 📞/🎥 des pages de
+    // conversation (privée ou de groupe) — voir prive.html / groupe.html.
+    function demarrerAppel(options) {
+      if (options.destinataire_id) {
+        Appels.demarrerAppelPrive(options.destinataire_id, options.nom, options.type);
+      } else if (options.groupe_id) {
+        Appels.demarrerAppelGroupe(options.groupe_id, options.nom, options.type);
+      }
+    }
+  </script>
+  <script>
+    // ── Notifications push : messages reçus même application fermée ──
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+    }
+
+    async function sAbonnerAuxNotifications(silencieux) {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.warn('Ce navigateur ne supporte pas les notifications push.');
+        return false;
+      }
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+
+        if (!silencieux) {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            afficherEtatNotifications();
+            return false;
+          }
+        } else if (Notification.permission !== 'granted') {
+          return false;
+        }
+
+        const reponseCle = await fetch("{{ url_for('notifications.cle_publique') }}");
+        const { cle } = await reponseCle.json();
+        if (!cle) {
+          console.error("Notifications non configurées côté serveur (VAPID_PUBLIC_KEY manquante).");
+          return false;
+        }
+
+        let abonnement = await registration.pushManager.getSubscription();
+        if (!abonnement) {
+          abonnement = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(cle),
+          });
+        }
+
+        const reponse = await fetch("{{ url_for('notifications.abonner') }}", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': "{{ csrf_token() }}" },
+          body: JSON.stringify(abonnement),
+        });
+        if (!reponse.ok) {
+          console.error("L'enregistrement de l'abonnement a échoué côté serveur.");
+          return false;
+        }
+
+        afficherEtatNotifications();
+        return true;
+      } catch (err) {
+        console.error('Notifications push indisponibles :', err);
+        return false;
+      }
+    }
+
+    function afficherEtatNotifications() {
+      const btnActiver = document.getElementById('btn-activer-notifs');
+      const btnBloque = document.getElementById('btn-notifs-bloquees');
+      const btnTester = document.getElementById('btn-tester-notif');
+      if (!btnActiver || !btnBloque || !btnTester) return;
+
+      btnActiver.style.display = 'none';
+      btnBloque.style.display = 'none';
+      btnTester.style.display = 'none';
+
+      if (Notification.permission === 'granted') {
+        btnTester.style.display = 'block';
+      } else if (Notification.permission === 'denied') {
+        btnBloque.style.display = 'block';
+      } else {
+        btnActiver.style.display = 'block';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+
+      afficherEtatNotifications();
+
+      if (Notification.permission === 'granted') {
+        sAbonnerAuxNotifications(true);   // déjà autorisé -> (ré)abonnement silencieux, au cas où
+      }
+
+      const btnActiver = document.getElementById('btn-activer-notifs');
+      if (btnActiver) btnActiver.addEventListener('click', () => sAbonnerAuxNotifications(false));
+
+      const btnTester = document.getElementById('btn-tester-notif');
+      if (btnTester) {
+        btnTester.addEventListener('click', async () => {
+          btnTester.textContent = '… envoi en cours';
+          try {
+            const reponse = await fetch("{{ url_for('notifications.tester') }}", {
+              method: 'POST',
+              headers: { 'X-CSRFToken': "{{ csrf_token() }}" },
+            });
+            const data = await reponse.json();
+            if (data.ok) {
+              btnTester.textContent = '✅ Envoyée — regarde tes notifications';
+            } else {
+              btnTester.textContent = '❌ ' + (data.erreur || 'Échec');
+            }
+          } catch (err) {
+            btnTester.textContent = '❌ Erreur réseau';
+          }
+          setTimeout(() => { btnTester.textContent = '🔔 Tester la notification'; }, 4000);
+        });
+      }
+    });
+  </script>
+  {% endif %}
+</body>
+</html>

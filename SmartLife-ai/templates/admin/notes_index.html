@@ -1,0 +1,8 @@
+{% extends 'admin/layout.html' %}
+{% block title %}Notes & résultats — SmartLife AI{% endblock %}
+{% block content %}
+<div class="top"><div><h1>Notes & résultats</h1><div class="muted">Choisis une matière pour définir sa méthode d’évaluation et saisir les notes.</div></div></div>
+<div class="table-wrap"><table><thead><tr><th>Matière</th><th>Filière</th><th>Niveau</th><th>Semestre</th><th>Coefficient</th><th></th></tr></thead><tbody>
+{% for m in matieres %}<tr><td><strong>{{ m.code }}</strong> — {{ m.nom }}</td><td>{{ m.niveau.filiere.nom }}</td><td>{{ m.niveau.nom }}</td><td>{{ m.semestre.nom }}</td><td>{{ m.coefficient }}</td><td><a href="{{ url_for('admin.notes_matiere', matiere_id=m.id) }}">Gérer</a></td></tr>{% else %}<tr><td colspan="6">Aucune matière active.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

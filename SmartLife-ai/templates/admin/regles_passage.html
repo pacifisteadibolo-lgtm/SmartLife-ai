@@ -1,0 +1,14 @@
+{% extends 'admin/layout.html' %}
+{% block title %}Règles de passage — Administration{% endblock %}
+{% block content %}
+<div class="top"><div><h1>Règles de passage</h1><div class="muted">Les critères restent configurables par année académique.</div></div></div>
+<div class="card form-card"><form method="post" class="grid">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div><label>Année académique</label><select name="annee_academique_id" required>{% for a in annees %}<option value="{{ a.id }}">{{ a.libelle }}</option>{% endfor %}</select></div>
+<div><label>Moyenne minimale /20</label><input type="number" name="moyenne_min" min="0" max="20" step="0.01" value="10" required></div>
+<div><label>Crédits minimaux</label><input type="number" name="credits_min" min="0" step="0.5" value="0" required></div>
+<div style="display:flex;align-items:end"><label><input type="checkbox" name="compensation_autorisee" checked> Compensation autorisée</label></div>
+<div><button type="submit">Enregistrer la règle</button></div>
+</form></div>
+<div class="card table-wrap"><table><thead><tr><th>Année</th><th>Moyenne min.</th><th>Crédits min.</th><th>Compensation</th></tr></thead><tbody>{% for r in regles %}<tr><td>{{ r.annee_academique.libelle }}</td><td>{{ r.moyenne_min }}/20</td><td>{{ r.credits_min }}</td><td>{{ 'Oui' if r.compensation_autorisee else 'Non' }}</td></tr>{% else %}<tr><td colspan="4">Aucune règle configurée.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'admin/layout.html' %}
+{% block title %}Bulletins — Administration{% endblock %}
+{% block content %}
+<div class="top"><div><h1>Bulletins & synthèses</h1><div class="muted">Moyennes pondérées, crédits et décision académique.</div></div><a href="{{ url_for('admin.regles_passage') }}">Règles de passage</a></div>
+<form method="get" class="card form-card grid">
+  <div><label>Année académique</label><select name="annee_id"><option value="">Toutes</option>{% for a in annees %}<option value="{{ a.id }}" {% if a.id == annee_id %}selected{% endif %}>{{ a.libelle }}</option>{% endfor %}</select></div>
+  <div><label>Semestre</label><select name="semestre_id"><option value="">Tous</option>{% for s in semestres %}<option value="{{ s.id }}" {% if s.id == semestre_id %}selected{% endif %}>{{ s.nom }}</option>{% endfor %}</select></div>
+  <div><button type="submit">Filtrer</button></div>
+</form>
+<div class="card table-wrap"><table><thead><tr><th>Étudiant</th><th>Matricule</th><th>Semestre</th><th>Moyenne</th><th>Crédits</th><th>Matières</th><th>Décision</th><th>Publication</th></tr></thead><tbody>
+{% for inscription, semestre, data, bulletin in lignes %}<tr>
+<td>{{ inscription.utilisateur.nom }}</td><td>{{ inscription.matricule }}</td><td>{{ semestre.nom }}</td><td><strong>{{ '%.2f'|format(data.moyenne) }}/20</strong></td><td>{{ data.credits_valides }}/{{ data.total_credits }}</td><td>{{ data.matieres_validees }}/{{ data.matieres_total }}</td><td>{{ data.decision }}</td>
+<td>{% if bulletin and bulletin.publie %}<span class="muted">Publié</span>{% else %}<form method="post" action="{{ url_for('admin.publier_bulletin', inscription_id=inscription.id, semestre_id=semestre.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Publier</button></form>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="8">Aucune synthèse disponible. Les résultats des matières doivent d’abord être publiés.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Planner — SmartLife AI{% endblock %}
+{% block content %}
+  <p class="page-eyebrow">Planner</p>
+  <h1 class="page-title">Tes tâches</h1>
+  <p class="page-sub">Triées par urgence : priorité + proximité de la deadline.</p>
+
+  <div class="section-block">
+    <h2>Nouvelle tâche</h2>
+    <form method="POST" action="{{ url_for('planner.ajouter') }}" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="titre">Titre</label>
+        <input type="text" id="titre" name="titre" required placeholder="Ex : Rendre le TP réseaux">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="priorite">Priorité</label>
+          <select id="priorite" name="priorite">
+            <option value="haute">Haute</option>
+            <option value="moyenne" selected>Moyenne</option>
+            <option value="basse">Basse</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="date_limite">Date limite</label>
+          <input type="date" id="date_limite" name="date_limite">
+        </div>
+      </div>
+      <div class="field">
+        <label for="description">Description (optionnel)</label>
+        <input type="text" id="description" name="description" placeholder="Détails de la tâche">
+      </div>
+      <button type="submit" class="btn-primary btn-compact">Ajouter</button>
+    </form>
+  </div>
+
+  <div class="section-block">
+    <div class="filter-tabs">
+      <a href="{{ url_for('planner.liste', statut='actives') }}" class="{{ 'active' if filtre == 'actives' }}">En cours</a>
+      <a href="{{ url_for('planner.liste', statut='terminees') }}" class="{{ 'active' if filtre == 'terminees' }}">Terminées</a>
+      <a href="{{ url_for('planner.liste', statut='toutes') }}" class="{{ 'active' if filtre == 'toutes' }}">Toutes</a>
+    </div>
+
+    {% if taches %}
+      {% for t in taches %}
+        <div class="task-row task-row-full">
+          <form method="POST" action="{{ url_for('planner.terminer', tache_id=t.id) }}" class="task-check-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="task-check {{ 'done' if t.statut == 'termine' }}" aria-label="Marquer terminé">
+              {% if t.statut == 'termine' %}✓{% endif %}
+            </button>
+          </form>
+          <div class="task-info">
+            <span class="{{ 'task-done-text' if t.statut == 'termine' }}">{{ t.titre }}</span>
+            {% if t.date_limite %}
+              <span class="task-date">{{ t.date_limite.strftime('%d/%m/%Y') }}</span>
+            {% endif %}
+          </div>
+          <span class="task-prio {{ t.priorite }}">{{ t.priorite }}</span>
+          <form method="POST" action="{{ url_for('planner.supprimer', tache_id=t.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="task-delete" aria-label="Supprimer">✕</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-hint">Rien ici pour l'instant.</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Finance — SmartLife AI{% endblock %}
+{% block content %}
+  <p class="page-eyebrow">Finance</p>
+  <h1 class="page-title">Ton budget du mois</h1>
+  <p class="page-sub">Dépenses et revenus depuis le 1er du mois.</p>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="label">Revenus</div>
+      <div class="value mint">{{ '%.0f'|format(total_revenus) }} FCFA</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Dépenses</div>
+      <div class="value danger">{{ '%.0f'|format(total_depenses) }} FCFA</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Solde</div>
+      <div class="value {{ 'danger' if solde < 0 else 'lamp' }}">{{ '%.0f'|format(solde) }} FCFA</div>
+    </div>
+  </div>
+
+  <div class="form-columns">
+    <div class="section-block">
+      <h2>Ajouter une dépense</h2>
+      <form method="POST" action="{{ url_for('finance.ajouter_depense') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="montant_d">Montant (FCFA)</label>
+          <input type="text" id="montant_d" name="montant" required placeholder="Ex : 2500">
+        </div>
+        <div class="field">
+          <label for="categorie">Catégorie</label>
+          <select id="categorie" name="categorie">
+            {% for c in categories %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="description_d">Description (optionnel)</label>
+          <input type="text" id="description_d" name="description" placeholder="Ex : Repas cafét">
+        </div>
+        <button type="submit" class="btn-primary btn-compact">Ajouter la dépense</button>
+      </form>
+    </div>
+
+    <div class="section-block">
+      <h2>Ajouter un revenu</h2>
+      <form method="POST" action="{{ url_for('finance.ajouter_revenu') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="montant_r">Montant (FCFA)</label>
+          <input type="text" id="montant_r" name="montant" required placeholder="Ex : 50000">
+        </div>
+        <div class="field">
+          <label for="source">Source</label>
+          <input type="text" id="source" name="source" required placeholder="Ex : Bourse, Job, Famille">
+        </div>
+        <button type="submit" class="btn-primary btn-compact">Ajouter le revenu</button>
+      </form>
+    </div>
+  </div>
+
+  {% if par_categorie %}
+    <div class="section-block">
+      <h2>Répartition par catégorie</h2>
+      {% for categorie, total in par_categorie %}
+        <div class="task-row">
+          <span>{{ categorie }}</span>
+          <span>{{ '%.0f'|format(total) }} FCFA</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="section-block">
+    <h2>Dernières dépenses</h2>
+    {% if depenses %}
+      {% for d in depenses %}
+        <div class="task-row">
+          <span>{{ d.description or d.categorie }} <span class="task-date">— {{ d.categorie }}</span></span>
+          <span>{{ '%.0f'|format(d.montant) }} FCFA</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-hint">Aucune dépense ce mois-ci.</p>
+    {% endif %}
+  </div>
+{% endblock %}

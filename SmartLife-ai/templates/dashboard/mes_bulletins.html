@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Mes bulletins — SmartLife AI{% endblock %}
+{% block content %}
+<div style="max-width:1000px;margin:30px auto;padding:20px"><h1>Mes bulletins</h1>{% if inscription %}<p>Matricule : <strong>{{ inscription.matricule }}</strong> · {{ inscription.filiere.nom }} · {{ inscription.niveau.nom }} · {{ inscription.annee_academique.libelle }}</p>{% endif %}
+{% for b in bulletins %}<div style="border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin:15px 0"><h2>{{ b.semestre.nom }}</h2><p>Moyenne : <strong>{{ b.moyenne }}/20</strong> · Crédits : <strong>{{ b.credits_valides }}/{{ b.total_credits }}</strong> · Matières validées : <strong>{{ b.matieres_validees }}/{{ b.matieres_total }}</strong></p><p>Décision : <strong>{{ b.decision }}</strong></p><a href="{{ url_for('dashboard.bulletin_pdf', bulletin_id=b.id) }}">Télécharger le bulletin PDF</a></div>{% else %}<p>Aucun bulletin publié pour le moment.</p>{% endfor %}</div>
+{% endblock %}
