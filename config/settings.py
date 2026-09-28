@@ -27,8 +27,16 @@ class Config:
     # Render fournit directement une DATABASE_URL (postgres://...) quand tu relies
     # la base à ton service web. On la convertit au préfixe attendu par SQLAlchemy 2.x.
     _database_url = os.environ.get('DATABASE_URL', '')
-    if _database_url.startswith('postgres://'):
-        _database_url = _database_url.replace('postgres://', 'postgresql://', 1)
+
+if _database_url.startswith('postgres://'):
+    _database_url = _database_url.replace('postgres://', 'postgresql://', 1)
+
+if _database_url.startswith('postgresql://'):
+    _database_url = _database_url.replace(
+        'postgresql://',
+        'postgresql+psycopg2://',
+        1
+    )
 
     SQLALCHEMY_DATABASE_URI = _database_url or (
         f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"
