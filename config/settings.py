@@ -46,7 +46,7 @@ class Config:
         )
 
     SQLALCHEMY_DATABASE_URI = _database_url or (
-        f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"
+        f"postgresql+psycopg2://{os.environ.get('DB_USER', 'postgres')}:"
         f"{os.environ.get('DB_PASSWORD', '')}"
         f"@{os.environ.get('DB_HOST', 'localhost')}:"
         f"{os.environ.get('DB_PORT', 5432)}/"
