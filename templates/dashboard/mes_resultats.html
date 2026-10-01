@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Mes résultats — SmartLife AI{% endblock %}
+{% block content %}
+<div style="max-width:1000px;margin:30px auto;padding:20px"><h1>Mes résultats</h1>{% if inscription %}<p>Matricule : <strong>{{ inscription.matricule }}</strong> · {{ inscription.filiere.nom }} · {{ inscription.niveau.nom }} · {{ inscription.annee_academique.libelle }}</p>{% endif %}
+<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:10px">Semestre</th><th style="text-align:left;padding:10px">Matière</th><th style="padding:10px">Coefficient</th><th style="padding:10px">Note /20</th><th style="padding:10px">Statut</th></tr></thead><tbody>{% for r in resultats %}<tr><td style="padding:10px">{{ r.semestre.nom }}</td><td style="padding:10px">{{ r.matiere.code }} — {{ r.matiere.nom }}</td><td style="padding:10px;text-align:center">{{ r.matiere.coefficient }}</td><td style="padding:10px;text-align:center"><strong>{{ r.note_finale }}</strong>/20</td><td style="padding:10px;text-align:center">{{ 'Validé' if r.valide else 'Non validé' }}</td></tr>{% else %}<tr><td colspan="5" style="padding:20px">Aucun résultat n’a encore été publié.</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'admin/layout.html' %}
+{% block title %}Annonces académiques{% endblock %}
+{% block content %}
+<div class="top"><div><h1>Annonces académiques</h1><div class="muted">Publie des informations ciblées aux étudiants et professeurs.</div></div></div>
+<div class="card form-card"><form method="post" class="grid">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div><label>Titre</label><input name="titre" required></div>
+<div><label>Cible</label><select name="target_type" id="target_type" onchange="toggleTarget()"><option value="tous">Tout le monde</option><option value="etudiants">Étudiants</option><option value="professeurs">Professeurs</option><option value="filiere">Une filière</option><option value="niveau">Un niveau</option></select></div>
+<div id="filiere_target"><label>Filière</label><select name="target_id">{% for f in filieres %}<option value="{{ f.id }}">{{ f.code }} — {{ f.nom }}</option>{% endfor %}</select></div>
+<div id="niveau_target"><label>Niveau</label><select name="target_id">{% for n in niveaux %}<option value="{{ n.id }}">{{ n.filiere.nom }} — {{ n.nom }}</option>{% endfor %}</select></div>
+<div style="grid-column:1/-1"><label>Contenu</label><textarea name="contenu" rows="5" required></textarea></div>
+<div><button>Publier l'annonce</button></div>
+</form></div>
+<div class="card table-wrap"><table><thead><tr><th>Date</th><th>Titre</th><th>Cible</th><th></th></tr></thead><tbody>{% for a in annonces %}<tr><td>{{ a.created_at.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ a.titre }}</td><td>{{ a.target_type }}</td><td><form method="post" action="{{ url_for('admin_plus.supprimer_annonce', annonce_id=a.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Supprimer</button></form></td></tr>{% else %}<tr><td colspan="4">Aucune annonce.</td></tr>{% endfor %}</tbody></table></div>
+<script>function toggleTarget(){const t=document.getElementById('target_type').value;document.getElementById('filiere_target').style.display=t==='filiere'?'block':'none';document.getElementById('niveau_target').style.display=t==='niveau'?'block':'none';}toggleTarget();</script>
+{% endblock %}

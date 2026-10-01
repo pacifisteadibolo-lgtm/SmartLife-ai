@@ -26,6 +26,9 @@
         <a href="{{ url_for('social.feed') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('social.') }}">UniShare</a>
         <a href="{{ url_for('messagerie.liste') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('messagerie.') }}">Messagerie</a>
         <a href="{{ url_for('ai.assistant') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('ai.') }}">Assistant IA</a>
+        <a href="{{ url_for('academique.annonces_publiques') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('academique.') }}">Annonces</a>
+        <a href="{{ url_for('academique.calendrier') }}">Calendrier</a>
+        <a href="{{ url_for('academique.notifications') }}">Notifications</a>
       </nav>
       <div class="app-user">
         <button type="button" id="btn-activer-notifs" class="app-notif-btn" style="display:none;">🔔 Activer les notifications</button>

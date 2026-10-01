@@ -1,0 +1,11 @@
+{% extends 'admin/layout.html' %}
+{% block title %}Calendrier académique{% endblock %}
+{% block content %}
+<div class="top"><div><h1>Calendrier académique</h1><div class="muted">Planifie examens, réunions, inscriptions et autres échéances.</div></div></div>
+<div class="card form-card"><form method="post" class="grid"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div><label>Titre</label><input name="titre" required></div><div><label>Type</label><select name="type_evenement"><option>cours</option><option>examen</option><option>inscription</option><option>réunion</option><option>vacances</option><option>autre</option></select></div>
+<div><label>Début</label><input type="datetime-local" name="debut" required></div><div><label>Fin</label><input type="datetime-local" name="fin"></div>
+<div><label>Lieu</label><input name="lieu"></div><div style="grid-column:1/-1"><label>Description</label><textarea name="description" rows="3"></textarea></div><div><button>Ajouter l'événement</button></div>
+</form></div>
+<div class="card table-wrap"><table><thead><tr><th>Début</th><th>Événement</th><th>Type</th><th>Lieu</th><th></th></tr></thead><tbody>{% for e in evenements %}<tr><td>{{ e.debut.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ e.titre }}</td><td>{{ e.type_evenement }}</td><td>{{ e.lieu or '—' }}</td><td><form method="post" action="{{ url_for('admin_plus.supprimer_evenement', evenement_id=e.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>Supprimer</button></form></td></tr>{% else %}<tr><td colspan="5">Aucun événement.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

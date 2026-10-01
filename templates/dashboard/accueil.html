@@ -20,6 +20,16 @@
     </div>
   </div>
 
+  {% if session.get('user_role') == 'etudiant' %}
+  <div class="section-block">
+    <div class="section-head">
+      <h2>Mes résultats · <a href="{{ url_for('dashboard.mes_bulletins') }}">Mes bulletins</a></h2>
+      <a href="{{ url_for('dashboard.mes_resultats') }}" class="section-head-link">Consulter →</a>
+    </div>
+    <p class="empty-hint">Consulte ici les notes officiellement publiées par l’administration.</p>
+  </div>
+  {% endif %}
+
   <div class="section-block">
     <div class="section-head">
       <h2>Prochaines échéances</h2>

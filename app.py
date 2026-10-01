@@ -7,7 +7,7 @@ eventlet.monkey_patch()
 # un crash "RuntimeError: cannot notify on un-acquired lock" sur TOUTES les pages
 # utilisant la base de données (donc /dashboard/, etc.) des qu'eventlet les manipulait.
 
-from flask import Flask, session, redirect, url_for
+from flask import Flask, session, redirect, url_for, request
 from flask_wtf.csrf import CSRFProtect
 from config.settings import Config
 from modules.database import db
@@ -39,6 +39,10 @@ def create_app():
     from modules.ai         import ai_bp
     from modules.messagerie import messagerie_bp
     from modules.notifications import notifications_bp
+    from modules.admin import admin_bp
+    from modules.preinscription import preinscription_bp
+    from modules.professeur import professeur_bp
+    from modules.academique import admin_plus_bp, academique_bp
 
     app.register_blueprint(auth_bp,       url_prefix='/auth')
     app.register_blueprint(finance_bp,    url_prefix='/finance')
@@ -48,6 +52,31 @@ def create_app():
     app.register_blueprint(ai_bp,         url_prefix='/ai')
     app.register_blueprint(messagerie_bp, url_prefix='/messagerie')
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(preinscription_bp)
+    app.register_blueprint(professeur_bp, url_prefix='/professeur')
+    app.register_blueprint(admin_plus_bp, url_prefix='/admin')
+    app.register_blueprint(academique_bp, url_prefix='/academique')
+
+    @app.after_request
+    def enregistrer_audit(response):
+        if session.get('user_id') and request.path.startswith(('/admin', '/professeur')) and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'}:
+            try:
+                from modules.database import JournalAudit
+                db.session.add(JournalAudit(
+                    user_id=session.get('user_id'),
+                    action=request.endpoint or request.path,
+                    methode=request.method,
+                    endpoint=request.path[:180],
+                    objet=(request.view_args or {}).__str__()[:255],
+                    ip=(request.headers.get('X-Forwarded-For', request.remote_addr) or '')[:64],
+                    user_agent=(request.user_agent.string or '')[:500],
+                    details='Action enregistrée automatiquement; données de formulaire non conservées.'
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        return response
 
     # Evenements temps reel (messages prives + groupes)
     from modules.sockets import enregistrer_evenements_socket

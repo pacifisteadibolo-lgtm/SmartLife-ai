@@ -1676,3 +1676,31 @@ a{ color:inherit; }
   .grille-video-distantes{ grid-template-columns:1fr; padding:.5rem; }
   .btn-controle-appel{ width:50px; height:50px; font-size:1.1rem; }
 }
+
+/* Phase 11 — interface responsive et composants communs */
+:root { --sl-primary:#2E7CF6; --sl-bg:#f6f8fc; --sl-card:#fff; --sl-border:#e7eaf0; --sl-text:#172033; --sl-muted:#6b7280; }
+html { scroll-behavior:smooth; }
+body.app-body { background:var(--sl-bg); color:var(--sl-text); }
+.app-main { min-width:0; }
+.app-brand { font-weight:800; letter-spacing:-.02em; }
+.app-brand em { font-style:normal; color:var(--sl-primary); }
+.app-nav a { transition:background .18s ease, transform .18s ease; }
+.app-nav a:hover { transform:translateX(2px); }
+.stat-grid { grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); }
+.stat-card,.section-block { transition:box-shadow .18s ease, transform .18s ease; }
+.stat-card:hover,.section-block:hover { box-shadow:0 10px 28px rgba(20,35,70,.07); }
+.flash-stack { position:sticky; top:12px; z-index:20; }
+@media (max-width:900px) {
+  .app-shell { display:block; }
+  .app-sidenav { position:relative; width:100%; min-height:auto; padding:14px 16px; }
+  .app-nav { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; }
+  .app-nav a { white-space:nowrap; }
+  .app-user { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .app-main { padding:24px 18px; }
+}
+@media (max-width:600px) {
+  .app-main { padding:18px 12px; }
+  .page-title { font-size:27px; }
+  .stat-grid { gap:10px; }
+  .stat-card { padding:15px; }
+}

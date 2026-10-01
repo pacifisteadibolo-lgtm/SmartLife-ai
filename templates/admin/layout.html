@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Administration — SmartLife AI{% endblock %}</title>
+    <style>
+        /* Phase 11 */
+        .nav-active { background:#1f2937 !important; color:#fff !important; }
+        .admin-topbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; }
+        .admin-menu-btn { display:none; }
+        @media(max-width:700px){ .admin-topbar{margin-bottom:16px}.admin-menu-btn{display:inline-block;background:#374151}.shell aside{position:relative}.shell aside nav{display:flex;overflow-x:auto;gap:4px}.shell aside nav a{white-space:nowrap} }
+        :root { --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#6b7280; --primary:#2563eb; --border:#e5e7eb; }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }
+        .shell { display:flex; min-height:100vh; }
+        aside { width:250px; background:#111827; color:#fff; padding:24px 16px; }
+        .brand { font-size:20px; font-weight:800; padding:0 12px 24px; }
+        .brand small { display:block; color:#9ca3af; font-size:11px; margin-top:4px; letter-spacing:.08em; text-transform:uppercase; }
+        nav a { display:block; color:#d1d5db; text-decoration:none; padding:11px 12px; border-radius:9px; margin:3px 0; }
+        nav a:hover { background:#1f2937; color:#fff; }
+        main { flex:1; padding:30px; max-width:1400px; }
+        .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; }
+        h1 { margin:0 0 6px; font-size:28px; }
+        .muted { color:var(--muted); }
+        .cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+        .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.03); }
+        .label { color:var(--muted); font-size:13px; }
+        .value { font-size:30px; font-weight:800; margin-top:7px; }
+        @media(max-width:900px){ aside{width:210px}.cards{grid-template-columns:repeat(2,1fr)} }
+        @media(max-width:600px){ .shell{display:block} aside{width:auto} main{padding:20px}.cards{grid-template-columns:1fr} }
+    .link-card { text-decoration:none; color:inherit; display:block; } .link-card span { color:var(--primary); font-size:13px; } form.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } input,select,textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px; font:inherit; } label { font-size:13px; font-weight:600; display:block; margin-bottom:6px; } button { border:0; background:var(--primary); color:white; padding:10px 14px; border-radius:9px; cursor:pointer; } .table-wrap { overflow:auto; } table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:12px; border-bottom:1px solid var(--border); white-space:nowrap; } th { font-size:12px; color:var(--muted); text-transform:uppercase; } .form-card { margin-bottom:20px; } .alert { padding:12px 14px; border-radius:9px; margin-bottom:15px; background:#eef2ff; } @media(max-width:700px){ form.grid{grid-template-columns:1fr;} } </style>
+</head>
+<body>
+<div class="shell">
+    <aside>
+        <div class="brand">SmartLife AI <small>Administration</small></div>
+        <nav>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.accueil' else '' }}" href="{{ url_for('admin.accueil') }}">Tableau de bord</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.etudiants' else '' }}" href="{{ url_for('admin.etudiants') }}">Étudiants</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.preinscriptions' else '' }}" href="{{ url_for('admin.preinscriptions') }}">Préinscriptions</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.professeurs' else '' }}" href="{{ url_for('admin.professeurs') }}">Professeurs</a><a class="{{ 'nav-active' if request.endpoint == 'admin.comptes' else '' }}" href="{{ url_for('admin.comptes') }}">Comptes</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.filieres' else '' }}" href="{{ url_for('admin.filieres') }}">Filières</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.niveaux' else '' }}" href="{{ url_for('admin.niveaux') }}">Niveaux</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.annees' else '' }}" href="{{ url_for('admin.annees') }}">Années académiques</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.semestres' else '' }}" href="{{ url_for('admin.semestres') }}">Semestres</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.matieres' else '' }}" href="{{ url_for('admin.matieres') }}">Matières</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.notes_index' else '' }}" href="{{ url_for('admin.notes_index') }}">Notes & résultats</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin.bulletins' else '' }}" href="{{ url_for('admin.bulletins') }}">Bulletins</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin_plus.annonces' else '' }}" href="{{ url_for('admin_plus.annonces') }}">Annonces</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin_plus.evenements' else '' }}" href="{{ url_for('admin_plus.evenements') }}">Calendrier</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin_plus.analytics' else '' }}" href="{{ url_for('admin_plus.analytics') }}">Analytique</a>
+            <a class="{{ 'nav-active' if request.endpoint == 'admin_plus.audit' else '' }}" href="{{ url_for('admin_plus.audit') }}">Journal d’audit</a>
+            <a href="{{ url_for('dashboard.accueil') }}">Retour à SmartLife</a>
+            <a href="{{ url_for('auth.logout') }}">Déconnexion</a>
+        </nav>
+    </aside>
+    <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}<div class="alert">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</main>
+</div>
+</body>
+</html>
