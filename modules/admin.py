@@ -7,7 +7,7 @@ import re
 import secrets
 from modules.database import (
     db, Utilisateur, AnneeAcademique, Filiere, Niveau,
-    Semestre, Professeur, Matiere, Preinscription, InscriptionEtudiant, EvaluationType, NoteEvaluation, ResultatMatiere, Notification
+    Semestre, Professeur, Matiere, Preinscription, InscriptionEtudiant, EvaluationType, NoteEvaluation, ResultatMatiere, Notification, ReglePassage
 )
 from utils.decorators import admin_required
 

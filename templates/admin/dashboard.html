@@ -1,23 +1,71 @@
 {% extends 'admin/layout.html' %}
+
 {% block title %}Administration — Tableau de bord{% endblock %}
+
 {% block content %}
+
 <div class="top">
     <div>
         <h1>Tableau de bord administratif</h1>
-        <div class="muted">Gestion de l'établissement et des données académiques.</div>
+        <div class="muted">
+            Gestion de l'établissement et des données académiques.
+        </div>
     </div>
 </div>
+
 <div class="cards">
-    <div class="card"><div class="label">Étudiants</div><div class="value">{{ total_etudiants }}</div></div>
-    <div class="card"><div class="label">Étudiants actifs</div><div class="value">{{ etudiants_actifs }}</div></div>
-    <div class="card"><div class="label">Étudiants inactifs</div><div class="value">{{ etudiants_inactifs }}</div></div>
-    <div class="card"><div class="label">Administrateurs</div><div class="value">{{ total_admins }}</div></div>
-    <div class="card"><div class="label">Comptes professeurs</div><div class="value">{{ comptes_professeurs }}</div></div>
+    <div class="card">
+        <div class="label">Étudiants</div>
+        <div class="value">{{ total_etudiants }}</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Étudiants actifs</div>
+        <div class="value">{{ etudiants_actifs }}</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Étudiants inactifs</div>
+        <div class="value">{{ etudiants_inactifs }}</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Administrateurs</div>
+        <div class="value">{{ total_admins }}</div>
+    </div>
+
+    <div class="card">
+        <div class="label">Comptes professeurs</div>
+        <div class="value">{{ comptes_professeurs }}</div>
+    </div>
 </div>
+
 <div class="cards" style="margin-top:16px;">
-    <a class="card link-card" href="{{ url_for('admin.filieres') }}"><div class="label">Filières</div><div class="value">{{ total_filieres }}</div><span>Gérer les filières →</span></a>
-    <a class="card link-card" href="{{ url_for('admin.matieres') }}"><div class="label">Matières</div><div class="value">{{ total_matieres }}</div><span>Gérer les matières →</span></a>
-    <a class="card link-card" href="{{ url_for('admin.professeurs') }}"><div class="label">Professeurs actifs</div><div class="value">{{ total_professeurs }}</div><span>Gérer les professeurs →</span></a>
-<a class="card link-card" href="{{ url_for('admin.preinscriptions') }}"><div class="label">Préinscriptions en attente</div><div class="value">{{ preinscriptions_en_attente }}</div><span>Examiner les dossiers →</span></a>
+
+    <a class="card link-card" href="{{ url_for('admin.filieres') }}">
+        <div class="label">Filières</div>
+        <div class="value">{{ total_filieres }}</div>
+        <span>Gérer les filières →</span>
+    </a>
+
+    <a class="card link-card" href="{{ url_for('admin.matieres') }}">
+        <div class="label">Matières</div>
+        <div class="value">{{ total_matieres }}</div>
+        <span>Gérer les matières →</span>
+    </a>
+
+    <a class="card link-card" href="{{ url_for('admin.professeurs') }}">
+        <div class="label">Professeurs actifs</div>
+        <div class="value">{{ total_professeurs }}</div>
+        <span>Gérer les professeurs →</span>
+    </a>
+
+    <a class="card link-card" href="{{ url_for('admin.preinscriptions') }}">
+        <div class="label">Préinscriptions en attente</div>
+        <div class="value">{{ preinscriptions_en_attente }}</div>
+        <span>Examiner les dossiers →</span>
+    </a>
+
 </div>
-{% endblock %>
+
+{% endblock %}

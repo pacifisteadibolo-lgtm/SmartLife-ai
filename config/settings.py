@@ -1,6 +1,8 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Config:
     # -- Sécurité
@@ -54,6 +56,11 @@ class Config:
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    SQLALCHEMY_ENGINE_OPTIONS = {
+    	'pool_pre_ping': True,
+    	'pool_recycle': 300,
+    }
 
     # -- Uploads
     UPLOAD_FOLDER = os.path.join(
